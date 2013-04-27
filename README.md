@@ -36,21 +36,23 @@ The github-api module accepts options at both the global and local task level. S
 
 - `dest` - is the path and filename where the retured request should be saved.
 
-    github: {
+Example
+```js
+github: {
+    options: {
+        oAuth: {
+            'client_id': 'XXXXXXXXXXXX',
+            'client_secret': 'YYYYYYYYYYYYYYYYYYYYYYYYYYYYY'
+        }
+    },
+    changelog: {
         options: {
-            oAuth: {
-                'client_id': 'XXXXXXXXXXXX',
-                'client_secret': 'YYYYYYYYYYYYYYYYYYYYYYYYYYYYY'
+            filters: {
+                'state': 'open'
             }
         },
-        changelog: {
-            options: {
-                filters: {
-                    'state': 'open'
-                }
-            },
-            src: '/repos/:org/:repo1/issues', // Get a JSON file for all open issues from repo1
-            dest: 'open.json'
-        }
+        src: '/repos/:org/:repo1/issues', // Get a JSON file for all open issues from repo1
+        dest: 'open.json'
     }
-
+}
+```
