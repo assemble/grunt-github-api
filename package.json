@@ -31,6 +31,6 @@
     "grunt": "~0.4.1"
   },
   "keywords": [
-    "gruntplugin github api gruntjs"
+    "gruntplugin, github, pages, git, github pages"
   ]
 }
