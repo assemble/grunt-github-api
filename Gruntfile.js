@@ -4,8 +4,15 @@ module.exports = function(grunt) {
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
 
-    jshint: {
-        all: ['Gruntfile.js', 'tasks/github-api.js']
+    github: {
+      options: {
+        filters: {type: 'public'},
+        reqType: "file"
+      },
+      pkg: {
+        src: '/repos/assemble/assemble/contents/package.json',
+        dest: 'pkg.json'
+      }
     }
 
   });
@@ -13,10 +20,7 @@ module.exports = function(grunt) {
   // Load the custom task
   grunt.loadTasks('tasks');
 
-  // Other NPM Modules
-  grunt.loadNpmTasks('grunt-contrib-jshint');
-
   // Default task(s).
-  grunt.registerTask('default', ['jshint']);
+  grunt.registerTask('default', ['github']);
 
 };

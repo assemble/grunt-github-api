@@ -1,0 +1,118 @@
+{
+  "name": "assemble",
+  "description": "Visit http://assemble.io. Assemble is a full-featured documentation, site and component generator built on Grunt.js.",
+  "version": "0.4.3",
+  "homepage": "https://github.com/assemble/assemble",
+  "author": {
+    "name": "assemble",
+    "url": "https://github.com/assemble/assemble"
+  },
+  "contributors": [
+    {
+      "name": "Brian Woodward",
+      "url": "https://github.com/doowb"
+    },
+    {
+      "name": "Jon Schlinkert",
+      "url": "https://github.com/jonschlinkert"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/assemble/assemble.git"
+  },
+  "bugs": {
+    "url": "git://github.com/assemble/assemble/issues"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/assemble/assemble/blob/master/LICENSE-MIT"
+    }
+  ],
+  "main": "./lib/assemble",
+  "engines": {
+    "node": ">= 0.8.0"
+  },
+  "scripts": {
+    "test": "grunt test"
+  },
+  "dependencies": {
+    "lodash": "~1.1.1",
+    "marked": "~0.2.8",
+    "highlight.js": "~7.3.0",
+    "assemble-handlebars": "https://github.com/assemble/assemble-handlebars/tarball/master",
+    "inflection": "~1.2.5",
+    "js-yaml": "~2.0.5"
+  },
+  "devDependencies": {
+    "chai": "~1.5.0",
+    "grunt": "~0.4.1",
+    "grunt-mocha-test": "~0.2.0",
+    "grunt-contrib-clean": "~0.4.1",
+    "grunt-contrib-jshint": "~0.6.0",
+    "assemble-internal": "~0.2.0"
+  },
+  "keywords": [
+    "blog generator",
+    "blog",
+    "boilerplate",
+    "boilerplates",
+    "bootstrap",
+    "build and deployment",
+    "build bootstrap",
+    "build system",
+    "build",
+    "builder",
+    "compile",
+    "compiler",
+    "components",
+    "conventions",
+    "deploy",
+    "example handlebars",
+    "framework",
+    "generator",
+    "gh-pages",
+    "grunt task",
+    "grunt",
+    "gruntplugin",
+    "handlebars",
+    "helpers",
+    "jekyll alternative",
+    "jekyll static",
+    "jekyll",
+    "json",
+    "mock",
+    "mocking",
+    "modules",
+    "mustache",
+    "node blog",
+    "node jekyll",
+    "parse",
+    "parser",
+    "partial",
+    "partials",
+    "pre-processor",
+    "preprocessor",
+    "render",
+    "renderer",
+    "scaffold",
+    "scaffolds",
+    "site builder",
+    "site generator",
+    "site generators",
+    "static HTML",
+    "static site",
+    "templates",
+    "templating",
+    "theme",
+    "themes",
+    "tool",
+    "toolkit",
+    "utility",
+    "web development",
+    "web framework",
+    "yaml front matter",
+    "yaml"
+  ]
+}

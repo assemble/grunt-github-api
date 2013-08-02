@@ -28,7 +28,11 @@ The github-api module accepts options at both the global and local task level. S
 
 - `filters` - should contain the filtering parameters avaliable to the `src` query defined. Additional information about specific filters can be found in the [Github Developer Documentation](http://developer.github.com/).
 
-- `screenDump` - boolean flag to used to determine if the returned JSON should be dumped to the screen. (default is `false`)
+- `screenDump` - boolean flag used to determine if the returned JSON should be dumped to the screen. (default is `false`)
+
+- `reqType` - string to indicate if the request type is either `data` or a `file` - (default is `data`)
+
+- `fileEncode` - string to indicate the desired encoding type file contents should be switched to before saving to disk.
 
 ### Targets
 
@@ -53,6 +57,16 @@ github: {
         },
         src: '/repos/:org/:repo1/issues', // Get a JSON file for all open issues from repo1
         dest: 'open.json'
+    },
+    snagFile: {
+        options: {
+            filters: {
+                type: 'public'
+            },
+            reqType: 'file'
+        },
+        src: '/repos/:org/:repo/contents/:filename.:ext', // Get a the specific file listed
+        dest: 'saveFile.json' // Save the file with this name
     }
 }
 ```

@@ -2,11 +2,18 @@
 
 // Extra node modules
 var https = require('https');
+var fs = require('fs');
 
 
 module.exports = function(grunt) {
 
-    // Function to send the actual request of https
+    /*
+     * Function writes the pure output returned from the request NO ENCODING CHANGES
+     *
+     * @param {object} | options - grunt github tasks properties
+     * @param {string} | dest - destination for contents being saved to disk
+     * @param {function} | callback - grunt asyn callback function
+     */
     function sendRequest(options, dest, callback) {
 
         // Make the request
@@ -16,11 +23,12 @@ module.exports = function(grunt) {
             var output = "";
             res.setEncoding('utf8');
 
-            // Pull the returned date into a variable
+            // Function to collect the data as the chunks appear.
             res.on('data', function (chunk) {
                 output += chunk;
             });
 
+            // Function that runs when all the requested data has been returned.
             res.on('end', function() {
 
                 // Check to see if a screen dump flag is true
@@ -30,16 +38,33 @@ module.exports = function(grunt) {
 
                 // Check to see if a dest file is defined is so output it
                 if (dest) {
-                    grunt.file.write(dest, output);
+                    
+                    // Check to see what the user expected back (data or a file).
+                    if (options.reqType === "file") {
+
+                        // Call write file function
+                        writeFile(dest, output, options.fileEncode);
+
+                    } else {
+
+                        // Call function to write the native data that was returned
+                        writeRaw(dest, output);
+
+                    }
+
+                    // Let the user know that the write was successful
                     grunt.log.writeln("File: " + dest + " was created!");
+
                 }
 
+                // Return the async callback as true.
                 callback(true);
 
             });
 
         });
 
+        // Request failed! Let the user know
         req.on('error', function(err) {
             grunt.log.writeln(err.message);
         });
@@ -49,7 +74,41 @@ module.exports = function(grunt) {
 
     }
 
-    // Function to build the request url parameters
+    /*
+     * Function writes the pure output returned from the request NO ENCODING CHANGES
+     *
+     * @param {string} | dest - file output destination path and name
+     * @param {object} | output - json returned from github.
+     */
+    function writeRaw(dest, output) {
+        grunt.file.write(dest, output);
+    }
+
+    /*
+     * Function writes the contents of the requested file.
+     *
+     * @param {string} | dest - file output destination path and name
+     * @param {object} | output - json returned from github.
+     * @param {string} | encode - desired file encoding type.
+     */
+    function writeFile(dest, output, encode) {
+
+        // Convert the requested response into a usable object then create a
+        // buffer to switch the content from one encoding type to another (encode)
+        var requestedFile = JSON.parse(output),
+            buffer = new Buffer(requestedFile.content, requestedFile.encoding).toString(encode);
+
+        // Write the properly encode file to disk
+        grunt.file.write(dest, buffer);
+
+    }
+
+    /*
+     * Function to build the query object
+     *
+     * @param {object} | paramObj - object containing all of the differnt parameters
+     * @param {boolean} | manyParamCheck - simple flag to determine the appended parameters content.
+     */
     function buildReq(paramObj, manyParamCheck) {
 
         var path = "";
@@ -84,7 +143,9 @@ module.exports = function(grunt) {
             },
             filters: {},
             oAuth: {},
-            screenDump: false
+            screenDump: false,
+            reqType: "data",
+            fileEncode: "utf8"
         });
 
         var cb = this.async();
