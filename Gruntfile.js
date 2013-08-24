@@ -5,14 +5,28 @@ module.exports = function(grunt) {
     pkg: grunt.file.readJSON('package.json'),
 
     github: {
-      options: {
-        filters: {type: 'public'},
-        reqType: "file"
+      issue1: {
+        options: {
+            filters: {
+                state: "open"
+            }
+        },
+        src: ['/repos/jeffherb/grunt-github-api/', '/repos/jeffherb/buildsys/'],
+        request: 'issues',
+        dest: "issues.json"
+      },
+      issue2: {
+        src: '/repos/jeffherb/grunt-github-api',
+        request: 'issues',
       },
       pkg: {
-        src: '/repos/assemble/assemble/contents/package.json',
-        dest: 'pkg.json'
-      }
+        options: {
+            task: {
+                type: "file",
+            }
+        },
+        src: '/repos/jeffherb/grunt-github-api/contents/package.json',
+      },
     }
 
   });

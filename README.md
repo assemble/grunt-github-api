@@ -1,3 +1,6 @@
+
+# THIS IS THE DEVELOPMENT VERSION OF THIS PLUGIN! PLEASE NOTE THE INFORMATION BELOW MAY NOT BE ACCURATE!!!
+
 ## Github API
 
 Used to query the Github API and save the returned JSON files locally.
