@@ -6,7 +6,7 @@ var github_api = function() {
     var requests = [];
     var cacheData = {
         location: "",
-        contents: "",
+        contents: {},
         changed: false,
     }
 
@@ -18,8 +18,8 @@ var github_api = function() {
         // Pull in the task options and merge with defaults below.
         var defaultOptions = {
             cache: {
-                path: ".api-data",
-                file: ".github-api-cache"
+                path: "api-data",
+                file: ".cache.json"
             },
             connection: {
                 host: 'api.github.com',
@@ -44,15 +44,16 @@ var github_api = function() {
         this.options = (mergeObject(defaultOptions, task.options({})));
 
         // Set the cache location from the options
-        cache.location = this.options.cache.path + "/" + this.options.cache.file;
+        cacheData.location = this.options.cache.path + "/" + this.options.cache.file;
 
-        if (grunt.file.exists(cache.location)) {
+        // Check to see if the cache directory path exists
+        if (!grunt.file.isDir(this.options.cache.path)) {
+            grunt.file.mkdir(this.options.cache.path);
+        }
 
-            cahce.content = grunt.file.readJSON(cache.location);
+        if (grunt.file.exists(cacheData.location)) {
 
-        } else {
-
-            cache.content = {};
+            cacheData.content = grunt.file.readJSON(cacheData.location);
 
         }
 
@@ -122,36 +123,41 @@ var github_api = function() {
 
         set: function(target, cacheName, type, unqiueId) {
 
-            var cacheTarget = cacheData["contents"][target] || false;
+            (function(cb) {
 
-            if (cacheTarget) {
+                // Build a copy of the object
+                var specificItem = {
+                    type: type,
+                    unqiueId: unqiueId
+                };
 
-                // Check for the cacheName for this target
-                if(cacheTarget[target][cacheName]) {
+                if (cacheData['contents'][target]) {
 
-                    cacheTarget[target][cacheName]["type"] = type;
-                    cacheTarget[target][cacheName]["unqiueId"] = unqiueId;
+                    // Check to see if the task is in the cache target contents
+                    if (cacheData['contents'][target][cacheName]) {
+
+                        cacheData['contents'][target][cacheName] = specificItem;
+
+                    } else {
+
+                        cacheData['contents'][target][cacheName] = {};
+                        cacheData['contents'][target][cacheName] = specificItem;
+                    }
 
                 } else {
 
-                    cacheTarget[target][cacheName] = {};
-
-                    cacheTarget[target][cacheName]["type"] = type;
-                    cacheTarget[target][cacheName]["unqiueId"] = unqiueId;
-
+                    cacheData['contents'][target] = {};
+                    cacheData['contents'][target][cacheName] = specificItem;
                 }
 
-            } else {
+                cb();
 
-                cacheData["contents"][target] = {};
-                //cacheData["contents"][target][cacheName] = {};
+            })(function(){
 
-                //cacheData["contents"][target][cacheName]["type"] = type;
-                //cacheData["contents"][target][cacheName]["unqiueId"] = unqiueId;
+                // Make the cacheData object as changed so it can be saved
+                cacheData.changed = true;
 
-            }
-
-            console.log(cacheData["contents"]);
+            });
 
         },
 
@@ -171,7 +177,10 @@ var github_api = function() {
             }
 
         },
-        del: function() {
+
+        getAll: function() {
+
+            return cacheData;
 
         }
     }

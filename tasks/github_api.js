@@ -2,6 +2,7 @@
 
 // Extra node modules
 var https = require('https');
+var fs = require('fs');
 
 module.exports = function(grunt) {
 
@@ -187,72 +188,20 @@ module.exports = function(grunt) {
 
         };
 
+        var saveCache = function(github_api, next) {
 
-        var prepDataWrite = function(github_api, collection, requestOptions, cb) {
+            var cacheData = github_api.cache.getAll();
 
-            //console.log(requestOptions);
+            if (cacheData.changed) {
 
-            // first determine if we are handling data or a file.
-            if (requestOptions.options.task.type === "data") {
-
-                console.log("Data request");
-
-            } else {
-
-                // We are not allowing the concatination of raw files so get the data out of collection.
-                var file = JSON.parse(collection[0]),
-                    origFilename = file.name,
-                    unqiueId = file.sha,
-                    origSrc = file.html_url,
-                    dest = false,
-                    cacheName = false;
-
-                // We will allow direct 1-to-1 overwriting of file name. so if one source is defined and one destination is defined
-                // we will override the output name to match the user defined.
-                if (requestOptions.data.dest && kindOf(requestOptions.data.dest) == "string") {
-
-                    dest = requestOptions.data.dest;
-
-                } else {
-
-                    // For simplcity sake we are going to build the filename from metadate returned by the API
-                    dest = destinationCleanup(origSrc);
-                }
-
-                // Get a cache name
-                cacheName = (dest.split(".")[0]);
-
-                // Check cache settings to determine if we care about keeping cache info on this task at all.
-                if (requestOptions.options.task.cache) {
-
-                    var writeFile = true,
-                        cacheData = github_api.cache.get(requestOptions.name, cacheName);
-
-                    if (cacheData) {
-
-                        console.log(cacheData);
-
-                    } else {
-
-                        console.log("Nothing was found cache the data.")
-
-                        // Set the data.
-                        github_api.cache.set(requestOptions.name, cacheName, "file", unqiueId);
-                    }
-
-                } else {
-
-                    // Ignoring cache on this task. Simply write the data.
-                    writeData(dest, file.content, 'utf8');
-
-                }
+                writeJSONFile(cacheData.location, cacheData.contents, false);
 
             }
 
+            // Move to the next step
+            next(github_api);
 
-            cb();
-
-        };
+        }
 
         // Process stepper and executer.
         //=============================================================================================================
@@ -260,6 +209,7 @@ module.exports = function(grunt) {
         var process = github_api.init(this, grunt)
             .step(generateRequests)
             .step(sendRequests)
+            .step(saveCache)
             .execute(function(err, results) {
 
                 if(err) {
@@ -295,6 +245,71 @@ module.exports = function(grunt) {
         }
 
         return temp.join("&");
+
+    };
+
+    var prepDataWrite = function(github_api, collection, requestOptions, cb) {
+
+        //console.log(requestOptions);
+
+        // first determine if we are handling data or a file.
+        if (requestOptions.options.task.type === "data") {
+
+            console.log("Data request");
+
+        } else {
+
+            // We are not allowing the concatination of raw files so get the data out of collection.
+            var file = JSON.parse(collection[0]),
+                origFilename = file.name,
+                unqiueId = file.sha,
+                origSrc = file.html_url,
+                dest = false,
+                cacheName = false;
+
+            // We will allow direct 1-to-1 overwriting of file name. so if one source is defined and one destination is defined
+            // we will override the output name to match the user defined.
+            if (requestOptions.data.dest && kindOf(requestOptions.data.dest) == "string") {
+
+                dest = requestOptions.data.dest;
+
+            } else {
+
+                // For simplcity sake we are going to build the filename from metadate returned by the API
+                dest = destinationCleanup(origSrc);
+            }
+
+            // Get a cache name
+            cacheName = (dest.split(".")[0]);
+
+            // Check cache settings to determine if we care about keeping cache info on this task at all.
+            if (requestOptions.options.task.cache) {
+
+                var writeFile = true,
+                    cacheData = github_api.cache.get(requestOptions.name, cacheName);
+
+                if (cacheData) {
+
+                    console.log(cacheData);
+
+                } else {
+
+                    // Set the data.
+                    github_api.cache.set(requestOptions.name, cacheName, "file", unqiueId);
+
+                }
+
+            } else {
+
+                // Ignoring cache on this task. Simply write the data.
+                writeData(dest, file.content, 'utf8');
+
+            }
+
+        }
+
+
+        cb();
 
     };
 
@@ -334,6 +349,18 @@ module.exports = function(grunt) {
 
         // Write the properly encode file to disk
         grunt.file.write(filename, buffer);
+
+    }
+
+    var writeJSONFile = function(filename, data, formate) {
+
+        fs.writeFile(filename, JSON.stringify(data, null, 4), function(err) {
+            if(err) {
+              console.log(err);
+            } else {
+              grunt.log.writeln("API plugin cache updated!");
+            }
+        });
 
     }
 
