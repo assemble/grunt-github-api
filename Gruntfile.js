@@ -9,6 +9,9 @@ module.exports = function(grunt) {
         options: {
             filters: {
                 state: "open"
+            },
+            oAuth: {
+                access_token: "ACCESS_TOKEN"
             }
         },
         src: ['/repos/jeffherb/grunt-github-api/', '/repos/jeffherb/buildsys/'],
@@ -16,11 +19,19 @@ module.exports = function(grunt) {
         dest: "issues.json"
       },
       issue2: {
+        options: {
+            oAuth: {
+                access_token: "ACCESS_TOKEN"
+            }
+        },
         src: '/repos/jeffherb/grunt-github-api',
         request: 'issues',
       },
       pkg: {
         options: {
+            oAuth: {
+                access_token: "ACCESS_TOKEN"
+            },
             task: {
                 type: "file",
             }

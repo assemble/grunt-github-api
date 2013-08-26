@@ -122,6 +122,8 @@ module.exports = function(grunt) {
 
                     var request = requestQueue.shift();
 
+                    console.log(request);
+
                     request[1].path = request[0];
 
                     var req = https.request(request[1], function(res) {
@@ -137,17 +139,29 @@ module.exports = function(grunt) {
 
                             collection.push(data);
 
-                            //console.log(data);
-
                             // If there is nothing else to do go and prep the data that needs to be written
                             if (requestQueue.length === 0) {
 
-                                prepDataWrite(github_api, collection, request[2], function(){
+                                //console.log(collection);
+
+                                if (collection.length > 0) {
+
+                                    console.log("sending write request");
+
+                                    prepDataWrite(github_api, collection, request[2], function(){
+
+                                        // Noting was left move to the next step.
+                                        next(github_api);
+
+                                    });
+
+                                } else {
+
+                                    console.log("nothing to do!");
 
                                     // Noting was left move to the next step.
                                     next(github_api);
-
-                                });
+                                }
 
                             // Check to see if the data is suppose to be seperated.
                             } else if (requestQueue.length > 0 && request[2].options.task.concat === false) {
@@ -194,12 +208,17 @@ module.exports = function(grunt) {
 
             if (cacheData.changed) {
 
-                writeJSONFile(cacheData.location, cacheData.contents, false);
+                writeJSONFile(cacheData.location, cacheData.contents, false, function(){
 
+                    // Move to the next step
+                    next(github_api);
+                });
+
+            } else {
+
+                // There is nothing to see here, move along!
+                 next(github_api);
             }
-
-            // Move to the next step
-            next(github_api);
 
         }
 
@@ -255,7 +274,23 @@ module.exports = function(grunt) {
         // first determine if we are handling data or a file.
         if (requestOptions.options.task.type === "data") {
 
-            console.log("Data request");
+            // Create a temp object which will contain all of the contents of the data objects that are returned
+            var newFile = {};
+
+            // Check the number of items in the collection. If more than one exist, the contents will be
+            if (collection.length > 1) {
+
+                if ()
+
+            } else {
+
+                // Lets loop through all of the items
+                for (var i = 0, var len = collection.length; i < len; i++) {
+
+                }
+
+            }
+
 
         } else {
 
@@ -265,11 +300,12 @@ module.exports = function(grunt) {
                 unqiueId = file.sha,
                 origSrc = file.html_url,
                 dest = false,
-                cacheName = false;
+                cacheName = false,
+                writeFile = true;
 
             // We will allow direct 1-to-1 overwriting of file name. so if one source is defined and one destination is defined
             // we will override the output name to match the user defined.
-            if (requestOptions.data.dest && kindOf(requestOptions.data.dest) == "string") {
+            if (requestOptions.data.dest && kindOf(requestOptions.data.src) == "string") {
 
                 dest = requestOptions.data.dest;
 
@@ -285,14 +321,15 @@ module.exports = function(grunt) {
             // Check cache settings to determine if we care about keeping cache info on this task at all.
             if (requestOptions.options.task.cache) {
 
-                var writeFile = true,
-                    cacheData = github_api.cache.get(requestOptions.name, cacheName);
+                var cacheData = github_api.cache.get(requestOptions.name, cacheName);
 
                 if (cacheData) {
 
                     console.log(cacheData);
 
                 } else {
+
+                    console.log(cacheData);
 
                     // Set the data.
                     github_api.cache.set(requestOptions.name, cacheName, "file", unqiueId);
@@ -337,7 +374,7 @@ module.exports = function(grunt) {
 
     var destinationCleanup = function (src) {
 
-        return src.replace("https://github.com/", "").replace("/blob", "").replace(/\//g, "-");
+        return src.replace("https://github.com/", "").replace("/\/blob/g", "").replace(/\//g, "-");
 
     }
 
@@ -352,13 +389,16 @@ module.exports = function(grunt) {
 
     }
 
-    var writeJSONFile = function(filename, data, formate) {
+    var writeJSONFile = function(filename, data, format, cb) {
 
         fs.writeFile(filename, JSON.stringify(data, null, 4), function(err) {
             if(err) {
               console.log(err);
             } else {
+
               grunt.log.writeln("API plugin cache updated!");
+
+              cb();
             }
         });
 
