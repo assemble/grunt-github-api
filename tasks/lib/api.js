@@ -53,7 +53,7 @@ var github_api = function() {
 
         if (grunt.file.exists(cacheData.location)) {
 
-            cacheData.content = grunt.file.readJSON(cacheData.location);
+            cacheData.contents = grunt.file.readJSON(cacheData.location);
 
         }
 
@@ -164,10 +164,10 @@ var github_api = function() {
         // Return the cache object based on the task a cache name provided
         get: function(target, cacheName) {
 
-            if (cacheData[target]) {
+            if (cacheData.contents[target]) {
 
-                if (cacheData[target][cacheName]) {
-                    return cacheData[target][cacheName];
+                if (cacheData.contents[target][cacheName]) {
+                    return cacheData.contents[target][cacheName];
                 } else {
                     return false;
                 }

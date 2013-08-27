@@ -10,28 +10,15 @@ module.exports = function(grunt) {
             filters: {
                 state: "open"
             },
-            oAuth: {
-                access_token: "ACCESS_TOKEN"
-            }
         },
-        src: ['/repos/jeffherb/grunt-github-api/', '/repos/jeffherb/buildsys/'],
-        request: 'issues',
+        src: ['/repos/jeffherb/grunt-github-api/issues', '/repos/jeffherb/buildsys/issues'],
         dest: "issues.json"
       },
       issue2: {
-        options: {
-            oAuth: {
-                access_token: "ACCESS_TOKEN"
-            }
-        },
-        src: '/repos/jeffherb/grunt-github-api',
-        request: 'issues',
+        src: '/repos/jeffherb/grunt-github-api/issues',
       },
       pkg: {
         options: {
-            oAuth: {
-                access_token: "ACCESS_TOKEN"
-            },
             task: {
                 type: "file",
             }
