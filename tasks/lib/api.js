@@ -17,9 +17,9 @@ var github_api = function() {
 
         // Pull in the task options and merge with defaults below.
         var defaultOptions = {
-            cache: {
+            output: {
                 path: "api-data",
-                file: ".cache.json"
+                cache: ".cache.json"
             },
             connection: {
                 host: 'api.github.com',
@@ -44,11 +44,11 @@ var github_api = function() {
         this.options = (mergeObject(defaultOptions, task.options({})));
 
         // Set the cache location from the options
-        cacheData.location = this.options.cache.path + "/" + this.options.cache.file;
+        cacheData.location = this.options.output.path + "/" + this.options.output.cache;
 
         // Check to see if the cache directory path exists
-        if (!grunt.file.isDir(this.options.cache.path)) {
-            grunt.file.mkdir(this.options.cache.path);
+        if (!grunt.file.isDir(this.options.output.path)) {
+            grunt.file.mkdir(this.options.output.path);
         }
 
         if (grunt.file.exists(cacheData.location)) {
