@@ -121,14 +121,14 @@ var github_api = function() {
     // Special cache related functions
     var cache = {
 
-        set: function(target, cacheName, type, unqiueId) {
+        set: function(target, cacheName, type, uniqueId) {
 
             (function(cb) {
 
                 // Build a copy of the object
                 var specificItem = {
                     type: type,
-                    unqiueId: unqiueId
+                    uniqueId: uniqueId
                 };
 
                 if (cacheData['contents'][target]) {

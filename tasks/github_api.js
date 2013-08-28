@@ -3,6 +3,7 @@
 // Extra node modules
 var https = require('https');
 var fs = require('fs');
+var crypto = require('crypto');
 
 module.exports = function(grunt) {
 
@@ -116,7 +117,7 @@ module.exports = function(grunt) {
 
                         res.on('end', function() {
 
-                            collection.push([data, request]);
+                            collection.push([JSON.parse(data), request]);
 
                             // If there is nothing else to do go and prep the data that needs to be written
                             if (requestQueue.length === 0) {
@@ -223,14 +224,14 @@ module.exports = function(grunt) {
 
         var data = false,
             request = false,
-            filename = false;
+            fileInfo = false;
 
         // first determine if we are handling data or a file.
         if ((requestType === "data" && collection.length === 1) || requestType === "file") {
 
             var data = collection[0][0],
                 request = collection[0][1],
-                filename = generate.filename(false request);
+                filepath = generate.filepath(true, request, requestType);
 
         } else {
 
@@ -241,22 +242,172 @@ module.exports = function(grunt) {
             */
         }
 
+        // Check if the cache should be consulted
+        if (request[2].options.task.cache) {
+
+            // Check the request type, if its file the unquie id is the sha
+            // for data we have to
+            var target = request[2].name,
+                cacheName = filepath,
+                uniqueId = "";
+
+            // Generate/ Gather all of the peoper cache information
+            if (requestType === "file") {
+                uniqueId = data.sha
+            } else {
+
+                // Turn the data into a string
+                var jStr = JSON.stringify(data);
+
+                // Now generate a sha out of it and convert it to a hex encoding
+                uniqueId = crypto.createHmac("sha", jStr);
+                uniqueId = uniqueId.digest('hex')
+
+            }
+
+            var cacheData = github_api.cache.get(request[2].name, filepath);
+
+            if (cacheData) {
+
+                console.log("cache found");
+
+                if (uniqueId == cacheData.uniqueId) {
+
+                    grint.log.writeln( filepath + " is already up-to-date. (No data has been written)");
+
+                } else {
+
+
+
+                }
+
+            } else {
+
+                github_api.cache.set(request[2].name, filepath.split(".")[0], requestType, uniqueId);
+
+                // File needs to be written
+                writeFile(filepath, data, requestType, function() {
+                    grunt.log.writeln( filepath + " was written to disk.");
+                });
+            }
+
+
+        } else {
+
+            // Cache was mark to be ignroed so we will write the data reguardless.
+
+        }
+
         cb();
 
     };
 
+    var writeFile = function(filepath, data, requestType, cb) {
+
+        // Check directory path (pop off the filename)
+        var dirPath = filepath.split("/").pop();
+
+        console.log(dirPath);
+
+        fs.realpath(dirPath, function (err, resolvedPath) {
+            if (err) throw console.log(err);
+            console.log(resolvedPath);
+        });
+
+        /*
+        if (requestType === "data") {
+
+            var buffer = new Buffer(JSON.stringify(data, null, 4));
+
+        } else {
+
+            var buffer = new Buffer(data, 'base64').toString('utf8');
+
+        }
+
+        //fs.writeFile(filename, data, [options], callback)
+        fs.writeFile(filepath, buffer, function(err) {
+
+            if (err) {
+                console.log(err);
+            }
+
+            cb();
+
+        });
+        */
+
+    }
+
+    // Generate functions
     var generate = {
 
-        filename: function(singleFile, request) {
-
-            console.log(request);
-
-            var dest = request[2].data.dest || false;
-                src = request[2].data.src;
+        filepath: function(singleFile, request, type) {
 
             if (singleFile) {
 
+                var dest = request[2].data.dest || false,
+                    origSrc = request[2].data.src;
+
+                // Check if dest was not defined. If not we are going to use the defautl
+                if (!dest) {
+
+                    // No source path was definded, check to see what the original sorce was
+                    if (grunt.util.kindOf(origSrc) == "array") {
+
+                        // Check to see if the length is really an array of one, if so use that source
+                        if (origSrc.length > 1) {
+
+                            dest = origSrc[0];
+
+                        } else {
+
+                            // Source if from a larger array. so we will used the requested string instead.
+                            dest = request[0];
+
+                        }
+
+                    } else {
+
+                        // only other thing could have been a string so set the dest to the source request
+                        dest = origSrc;
+
+                    }
+
+                }
+
+
+            } else {
+
+                // Multiple data sets return that will need to be concatinated into one.
+                dest = request[2].data.dest
+
             }
+
+            // Take any parameters off of the dest string if they exist
+            dest = dest.split("?")[0];
+
+            // Add output directory if it is defined
+            if (request[2].options.output.path) {
+
+                var outputPath = request[2].options.output.path;
+
+                if(dest.charAt(0) === "/") {
+                    dest = dest.substring(1);
+                }
+
+                if (outputPath.charAt(outputPath.length-1) === "/") {
+                    dest = outputPath + dest;
+                } else {
+                    dest = outputPath + "/" + dest;
+                }
+
+
+            }
+
+
+            return dest;
+
 
         }
 
