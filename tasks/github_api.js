@@ -4,6 +4,7 @@
 var https = require('https');
 var fs = require('fs');
 var crypto = require('crypto');
+var mkdirp = require('mkdirp');
 
 module.exports = function(grunt) {
 
@@ -62,7 +63,17 @@ module.exports = function(grunt) {
 
                     if (grunt.util.kindOf(src) === "array" && taskDetails.data.dest ) {
 
-                        requestQueue.push([src, taskOptions.connection, taskDetails]);
+                        if (src.length > 1) {
+
+                            for (var i = 0, len = src.length; i < len; i++ ) {
+                                requestQueue.push([src[i], taskOptions.connection, taskDetails]);
+                            }
+
+                        } else {
+
+                             requestQueue.push([src[0], taskOptions.connection, taskDetails]);
+
+                        }
 
                     } else {
 
@@ -124,7 +135,10 @@ module.exports = function(grunt) {
 
                                 if (collection.length > 0) {
 
-                                    prepWrite(github_api, collection, taskSettings.type, function(){
+                                    prepWrite(github_api, collection, taskSettings.type, function() {
+
+                                        // Flush the collection as it was sent for writting
+                                        collection = [];
 
                                         // Noting was left move to the next step.
                                         next(github_api);
@@ -224,22 +238,21 @@ module.exports = function(grunt) {
 
         var data = false,
             request = false,
-            fileInfo = false;
+            filepath = false;
 
         // first determine if we are handling data or a file.
         if ((requestType === "data" && collection.length === 1) || requestType === "file") {
 
-            var data = collection[0][0],
-                request = collection[0][1],
-                filepath = generate.filepath(true, request, requestType);
+            data = collection[0][0];
+            request = collection[0][1];
+            filepath = generate.filepath(true, request, requestType);
 
         } else {
 
-            /*
-            var data = collection[0][0],
-                request = collection[0][1],
-                fileInfo = generate.fileInfo(data, request, requestType);
-            */
+            data = generate.data(collection);
+            request = collection[0][1];
+            filepath = generate.filepath(false, request, requestType);
+
         }
 
         // Check if the cache should be consulted
@@ -253,7 +266,8 @@ module.exports = function(grunt) {
 
             // Generate/ Gather all of the peoper cache information
             if (requestType === "file") {
-                uniqueId = data.sha
+                uniqueId = data.sha;
+
             } else {
 
                 // Turn the data into a string
@@ -261,7 +275,7 @@ module.exports = function(grunt) {
 
                 // Now generate a sha out of it and convert it to a hex encoding
                 uniqueId = crypto.createHmac("sha", jStr);
-                uniqueId = uniqueId.digest('hex')
+                uniqueId = uniqueId.digest('hex');
 
             }
 
@@ -269,15 +283,21 @@ module.exports = function(grunt) {
 
             if (cacheData) {
 
-                console.log("cache found");
-
                 if (uniqueId == cacheData.uniqueId) {
 
+                    // Dont have to do anything
                     grint.log.writeln( filepath + " is already up-to-date. (No data has been written)");
 
                 } else {
 
+                    // Update the cache
+                    github_api.cache.set(request[2].name, filepath.split(".")[0], requestType, uniqueId);
 
+                    writeFile(filepath, data, requestType, function() {
+                        grunt.log.writeln( filepath + " was written to disk.");
+
+                        cb();
+                    });
 
                 }
 
@@ -288,6 +308,8 @@ module.exports = function(grunt) {
                 // File needs to be written
                 writeFile(filepath, data, requestType, function() {
                     grunt.log.writeln( filepath + " was written to disk.");
+
+                    cb();
                 });
             }
 
@@ -295,47 +317,74 @@ module.exports = function(grunt) {
         } else {
 
             // Cache was mark to be ignroed so we will write the data reguardless.
+            writeFile(filepath, data, requestType, function() {
+                grunt.log.writeln( filepath + " was written to disk.");
+
+                cb();
+            });
 
         }
-
-        cb();
 
     };
 
     var writeFile = function(filepath, data, requestType, cb) {
 
-        // Check directory path (pop off the filename)
-        var dirPath = filepath.split("/").pop();
+        function write() {
 
-        console.log(dirPath);
+            if (requestType === "data") {
 
-        fs.realpath(dirPath, function (err, resolvedPath) {
-            if (err) throw console.log(err);
-            console.log(resolvedPath);
-        });
+                var buffer = new Buffer(JSON.stringify(data, null, 4));
 
-        /*
-        if (requestType === "data") {
+            } else {
 
-            var buffer = new Buffer(JSON.stringify(data, null, 4));
+                var buffer = new Buffer(data, 'base64').toString('utf8');
 
-        } else {
-
-            var buffer = new Buffer(data, 'base64').toString('utf8');
-
-        }
-
-        //fs.writeFile(filename, data, [options], callback)
-        fs.writeFile(filepath, buffer, function(err) {
-
-            if (err) {
-                console.log(err);
             }
 
-            cb();
+            //fs.writeFile(filename, data, [options], callback)
+            fs.writeFile(filepath, buffer, function(err) {
+
+                if (err) {
+                    console.log(err);
+                }
+
+                cb();
+
+            });
+        }
+
+        // Figure out the directory path
+        var dirPath = filepath.split("/");
+
+        // Remove the last filename
+        dirPath.pop();
+
+        // Reconstruct the file path based on the split array.
+        dirPath = dirPath.join("/");
+
+        // Check to see if the path exists
+        fs.exists(dirPath, function (exists) {
+            if (!exists) {
+
+                mkdirp(dirPath, function (err) {
+
+                    if (err) {
+                        grunt.log.writeln("Error: Creating data directory path - " + dirPath);
+                    } else {
+
+                        // Now the directory structure is in place write the file.
+                        write();
+                    }
+
+                });
+
+            } else {
+
+                // The directories exists, write the file
+                write();
+            }
 
         });
-        */
 
     }
 
@@ -376,7 +425,6 @@ module.exports = function(grunt) {
 
                 }
 
-
             } else {
 
                 // Multiple data sets return that will need to be concatinated into one.
@@ -405,9 +453,22 @@ module.exports = function(grunt) {
 
             }
 
-
             return dest;
+        },
 
+        data: function(collection) {
+
+            // Create a new object for the data to be put together
+            var finishedObject = {}
+
+            for (var i = 0, len = collection.length; i < len; i++ ) {
+
+                // Add the current
+                finishedObject[i] = collection[i][0];
+
+            }
+
+            return finishedObject;
 
         }
 

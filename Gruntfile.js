@@ -5,25 +5,39 @@ module.exports = function(grunt) {
     pkg: grunt.file.readJSON('package.json'),
 
     github: {
-      issue1: {
+      exampleIssues: {
         options: {
+            oAuth: {
+                access_token: ""
+            },
             filters: {
                 state: "open"
             },
+            task: {
+                concat: true
+            }
         },
-        src: ['/repos/jeffherb/grunt-github-api/issues', '/repos/jeffherb/buildsys/issues'],
-        dest: "issues.json"
+        src: ['/repos/jeffherb/grunt-github-api-example/issues', '/repos/jeffherb/grunt-github-api/issues'],
+        dest: "combinded-issues.json"
       },
-      issue2: {
-        src: '/repos/jeffherb/grunt-github-api/issues',
-      },
-      pkg: {
+      seperateIssues: {
         options: {
+            oAuth: {
+                access_token: ""
+            }
+        },
+        src: ['/repos/jeffherb/grunt-github-api-example/issues', '/repos/jeffherb/grunt-github-api/issues'],
+      },
+      examplePkg: {
+        options: {
+            oAuth: {
+                access_token: ""
+            },
             task: {
                 type: "file",
             }
         },
-        src: '/repos/jeffherb/grunt-github-api/contents/package.json',
+        src: '/repos/jeffherb/grunt-github-api-example/contents/package.json',
       },
     }
 
