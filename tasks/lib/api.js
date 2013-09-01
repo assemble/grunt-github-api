@@ -154,6 +154,8 @@ var github_api = function() {
 
             })(function(){
 
+                //console.log(cacheData);
+
                 // Make the cacheData object as changed so it can be saved
                 cacheData.changed = true;
 
@@ -178,10 +180,14 @@ var github_api = function() {
 
         },
 
-        getAll: function() {
+        dump: function() {
 
             return cacheData;
 
+        },
+
+        saved: function() {
+            cacheData.changed = false;
         }
     }
 

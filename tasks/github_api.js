@@ -190,12 +190,35 @@ module.exports = function(grunt) {
 
         };
 
+        var saveCache = function(github_api, next) {
+
+            //console.log("save cache");
+
+            var cache = github_api.cache.dump();
+
+            if (cache.changed) {
+
+                writeFile(cache.location, cache.contents, "data", function() {
+                    grunt.log.writeln( "Cache has been updated." );
+
+                    next(github_api);
+                });
+
+
+            } else {
+
+                next(github_api);
+            }
+
+        };
+
         // Process stepper and executer.
         //=============================================================================================================
 
         var process = github_api.init(this, grunt)
-            .step(generateRequests)
-            .step(sendRequests)
+            .step(generateRequests) // Generate requests from each task
+            .step(sendRequests) // Send all requests and save/write data as needed
+            .step(saveCache) // Save cache data
             .execute(function(err, results) {
 
                 if(err) {
@@ -255,73 +278,114 @@ module.exports = function(grunt) {
 
         }
 
-        // Check if the cache should be consulted
-        if (request[2].options.task.cache) {
+        // Do a quick data verification. If a message was returned it most likly means we have no real data.
+        if (verifyData(data)) {
 
-            // Check the request type, if its file the unquie id is the sha
-            // for data we have to
-            var target = request[2].name,
-                cacheName = filepath,
-                uniqueId = "";
+            // Check if the cache should be consulted
+            if (request[2].options.task.cache) {
 
-            // Generate/ Gather all of the peoper cache information
-            if (requestType === "file") {
-                uniqueId = data.sha;
+                // Check the request type, if its file the unquie id is the sha
+                // for data we have to
+                var target = request[2].name,
+                    cacheName = filepath,
+                    uniqueId = "";
 
-            } else {
+                // Generate/ Gather all of the peoper cache information
+                if (requestType === "file") {
 
-                // Turn the data into a string
-                var jStr = JSON.stringify(data);
-
-                // Now generate a sha out of it and convert it to a hex encoding
-                uniqueId = crypto.createHmac("sha", jStr);
-                uniqueId = uniqueId.digest('hex');
-
-            }
-
-            var cacheData = github_api.cache.get(request[2].name, filepath);
-
-            if (cacheData) {
-
-                if (uniqueId == cacheData.uniqueId) {
-
-                    // Dont have to do anything
-                    grint.log.writeln( filepath + " is already up-to-date. (No data has been written)");
+                    uniqueId = data.sha;
 
                 } else {
 
-                    // Update the cache
+                    // Turn the data into a string
+                    var jStr = JSON.stringify(data);
+
+                    // Now generate a sha out of it and convert it to a hex encoding
+                    uniqueId = crypto.createHmac("sha", jStr);
+                    uniqueId = uniqueId.digest('hex');
+
+                }
+
+                var cacheData = github_api.cache.get(request[2].name, filepath);
+
+                if (cacheData) {
+
+                    if (uniqueId == cacheData.uniqueId) {
+
+                        // Dont have to do anything
+                        grunt.log.writeln( filepath + " is already up-to-date. (No data has been written)");
+
+                        cb();
+
+                    } else {
+
+                        // Update the cache
+                        github_api.cache.set(request[2].name, filepath.split(".")[0], requestType, uniqueId);
+
+                        writeFile(filepath, data, requestType, function() {
+                            grunt.log.writeln( filepath + " was written to disk.");
+
+                            cb();
+                        });
+
+                    }
+
+                } else {
+
                     github_api.cache.set(request[2].name, filepath.split(".")[0], requestType, uniqueId);
 
+                    // File needs to be written
                     writeFile(filepath, data, requestType, function() {
                         grunt.log.writeln( filepath + " was written to disk.");
 
                         cb();
                     });
-
                 }
+
 
             } else {
 
-                github_api.cache.set(request[2].name, filepath.split(".")[0], requestType, uniqueId);
-
-                // File needs to be written
+                // Cache was mark to be ignroed so we will write the data reguardless.
                 writeFile(filepath, data, requestType, function() {
                     grunt.log.writeln( filepath + " was written to disk.");
 
                     cb();
                 });
-            }
 
+            }
 
         } else {
 
-            // Cache was mark to be ignroed so we will write the data reguardless.
-            writeFile(filepath, data, requestType, function() {
-                grunt.log.writeln( filepath + " was written to disk.");
+            // Verification failed. Move along.
+            cb();
+        }
 
-                cb();
-            });
+    };
+
+    var verifyData = function(data) {
+
+
+        if (grunt.util.kindOf(data) == "object") {
+
+            // Check for the message property.
+            var message = data.message || false;
+
+            // Check to see if there there is a message property returnef.
+            if (message) {
+
+                grunt.log.writeln(message);
+
+                return false;
+
+            } else {
+
+                return true;
+            }
+
+        } else {
+
+            // Data is not a object, can not verify
+            return true;
 
         }
 
@@ -408,6 +472,10 @@ module.exports = function(grunt) {
                         if (origSrc.length > 1) {
 
                             dest = origSrc[0];
+                            dest = (request[2].options.connection.path).split("?")[0]
+
+                            //console.log(request[2].options.connection.path);
+                            //console.log(dest);
 
                         } else {
 
