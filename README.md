@@ -91,9 +91,6 @@ github: {
     // Downloads a copy of the example.json file from GitHub.
     examplePkg: {
         options: {
-            oAuth: {
-                access_token: "5a9a26428b86374627290de60eb912bd1f45a906"
-            },
             task: {
                 type: "file",
             }

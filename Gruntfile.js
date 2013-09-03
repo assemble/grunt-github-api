@@ -8,7 +8,7 @@ module.exports = function(grunt) {
       exampleIssues: {
         options: {
             oAuth: {
-                access_token: "5a9a26428b86374627290de60eb912bd1f45a906"
+                access_token: ""
             },
             filters: {
                 state: "open"
@@ -23,7 +23,7 @@ module.exports = function(grunt) {
       seperateIssues: {
         options: {
             oAuth: {
-                access_token: "5a9a26428b86374627290de60eb912bd1f45a906"
+                access_token: ""
             }
         },
         src: ['/repos/jeffherb/grunt-github-api-example/issues', '/repos/jeffherb/grunt-github-api/issues'],
@@ -31,7 +31,7 @@ module.exports = function(grunt) {
       examplePkg: {
         options: {
             oAuth: {
-                access_token: "5a9a26428b86374627290de60eb912bd1f45a906"
+                access_token: ""
             },
             task: {
                 type: "file",
