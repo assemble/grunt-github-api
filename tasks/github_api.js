@@ -5,6 +5,9 @@ var https = require('https');
 var fs = require('fs');
 var crypto = require('crypto');
 var mkdirp = require('mkdirp');
+
+// Project Arrays
+var requestQueue = [];
 var writeQueue = [];
 
 module.exports = function(grunt) {
@@ -14,7 +17,6 @@ module.exports = function(grunt) {
     // Setup the new multi task
     grunt.registerMultiTask('github', 'Simple Script to query the github API.', function() {
 
-        var requestQueue = [];
         var done = this.async();
 
         // Task Functions
@@ -46,7 +48,7 @@ module.exports = function(grunt) {
                 // Check for additional filters and oAuth
                 if (taskOptions.oAuth || taskOptions.filters) {
 
-                    parameters = parameterBuilder(taskOptions.oAuth, taskOptions.filters);
+                    parameters = generate.parameters(taskOptions.oAuth, taskOptions.filters);
 
                 }
 
@@ -81,7 +83,7 @@ module.exports = function(grunt) {
                         if (taskDetails.options.task.type == "data") {
                             grunt.log.writeln("You need to define a destination name if you are contcating multiple data sets");
                         } else {
-                            grunt.log.writeln("You can not combile files with this plugin just yet!");
+                            grunt.log.writeln("You can not combind files with this plugin!");
                         }
 
                     }
@@ -205,13 +207,39 @@ module.exports = function(grunt) {
         var writeRequests = function(github_api, next) {
 
             // Make sure there is something in queue to work with,
-            if (requestQueue.length !== 0) {
+            if (writeQueue.length !== 0) {
 
-                console.log("Write request!");
+                //var currentQueue = writeQueue;
+
+                (function processQueue(currentQueue) {
+
+                    var wItem = currentQueue.shift();
+
+                    writeFile(wItem[0], wItem[1], wItem[2], function(){
+
+                        grunt.log.writeln("File: " + wItem[0] + " was written");
+
+                        if (currentQueue.length > 0) {
+
+                            processQueue(currentQueue);
+
+                        } else {
+
+                            writeQueue = [];
+
+                            next(github_api);
+
+                        }
+
+                    });
+
+                })(writeQueue);
+
+            } else {
+
+                next(github_api);
 
             }
-
-            next(github_api);
 
         };
 
@@ -264,28 +292,6 @@ module.exports = function(grunt) {
     // Helper Functions
     //=============================================================================================================
 
-    var parameterBuilder = function () {
-        // go through and loop
-        var temp = [];
-
-        for (var i=0; i<arguments.length; i++) {
-
-            if (arguments[i]) {
-
-                for (var item in arguments[i]) {
-
-                    temp.push(item + "=" + arguments[i][item]);
-
-                }
-
-            }
-
-        }
-
-        return temp.join("&");
-
-    };
-
     var checkCache = function(github_api, filepath, data, requestName, requestType, cb) {
 
         var uniqueId = "";
@@ -332,7 +338,7 @@ module.exports = function(grunt) {
 
         } else {
 
-            github_api.cache.set(requestName, filepath.split(".")[0], requestType, uniqueId);
+            github_api.cache.set(requestName, filepath, requestType, uniqueId);
 
             // File needs to be written
             cb(false);
@@ -355,19 +361,19 @@ module.exports = function(grunt) {
 
                 data = collection[0][0];
                 request = collection[0][1];
-                filepath = generate.filepath(true, request, requestType);
+                filepath = generate.filepath(true, request);
 
             } else {
 
                 data = generate.data(collection);
                 request = collection[0][1];
-                filepath = generate.filepath(false, request, requestType);
+                filepath = generate.filepath(false, request);
 
             }
 
             if (request[2].options.task.cache) {
 
-                checkCache(github_api, filepath, data, request[2].name, requestType, function(skip) {
+                checkCache(github_api, filepath.split(".")[0], data, request[2].name, requestType, function(skip) {
 
                     if (!skip){
                         writeQueue.push([filepath, data, requestType]);
@@ -460,7 +466,7 @@ module.exports = function(grunt) {
     // Generate functions
     var generate = {
 
-        filepath: function(singleFile, request, type) {
+        filepath: function(singleFile, request) {
 
             if (singleFile) {
 
@@ -539,6 +545,28 @@ module.exports = function(grunt) {
             }
 
             return finishedObject;
+
+        },
+
+        parameters: function() {
+
+            var temp = [];
+
+            for (var i=0; i<arguments.length; i++) {
+
+                if (arguments[i]) {
+
+                    for (var item in arguments[i]) {
+
+                        temp.push(item + "=" + arguments[i][item]);
+
+                    }
+
+                }
+
+            }
+
+            return temp.join("&");
 
         }
 
