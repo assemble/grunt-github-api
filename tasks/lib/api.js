@@ -152,9 +152,7 @@ var github_api = function() {
 
                 cb();
 
-            })(function(){
-
-                //console.log(cacheData);
+            })(function() {
 
                 // Make the cacheData object as changed so it can be saved
                 cacheData.changed = true;

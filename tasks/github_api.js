@@ -5,6 +5,7 @@ var https = require('https');
 var fs = require('fs');
 var crypto = require('crypto');
 var mkdirp = require('mkdirp');
+var writeQueue = [];
 
 module.exports = function(grunt) {
 
@@ -128,7 +129,17 @@ module.exports = function(grunt) {
 
                         res.on('end', function() {
 
-                            collection.push([JSON.parse(data), request]);
+                            var reqData = JSON.parse(data);
+
+                            if (reqData.message) {
+
+                                grunt.log.writeln("Request failed, GitHub responded - " + reqData.message);
+
+                            } else {
+
+                                collection.push([reqData, request]);
+
+                            }
 
                             // If there is nothing else to do go and prep the data that needs to be written
                             if (requestQueue.length === 0) {
@@ -190,15 +201,32 @@ module.exports = function(grunt) {
 
         };
 
-        var saveCache = function(github_api, next) {
+        // Task to
+        var writeRequests = function(github_api, next) {
 
-            //console.log("save cache");
+            // Make sure there is something in queue to work with,
+            if (requestQueue.length !== 0) {
+
+                console.log("Write request!");
+
+            }
+
+            next(github_api);
+
+        };
+
+        // Task specificaly to save the cache
+        var saveCache = function(github_api, next) {
 
             var cache = github_api.cache.dump();
 
             if (cache.changed) {
 
                 writeFile(cache.location, cache.contents, "data", function() {
+
+                    // Unmarked the cache as changed.
+                    github_api.cache.saved();
+
                     grunt.log.writeln( "Cache has been updated." );
 
                     next(github_api);
@@ -218,6 +246,7 @@ module.exports = function(grunt) {
         var process = github_api.init(this, grunt)
             .step(generateRequests) // Generate requests from each task
             .step(sendRequests) // Send all requests and save/write data as needed
+            .step(writeRequests) // Check and write any requests that should go to disk.
             .step(saveCache) // Save cache data
             .execute(function(err, results) {
 
@@ -257,140 +286,116 @@ module.exports = function(grunt) {
 
     };
 
+    var checkCache = function(github_api, filepath, data, requestName, requestType, cb) {
+
+        var uniqueId = "";
+
+        // Generate/ Gather all of the peoper cache information
+        if (requestType === "file") {
+
+            uniqueId = data.sha;
+
+        } else {
+
+            // Turn the data into a string
+            var jStr = JSON.stringify(data);
+
+            // Deal with the strange changing gravatar url that breaks cache.
+            jStr = jStr.replace(/https:\/\/\d\.gravatar/g, "https://gravatar");
+
+            // Now generate a sha out of it and convert it to a hex encoding
+            uniqueId = crypto.createHmac("sha", jStr);
+            uniqueId = uniqueId.digest('hex');
+
+        }
+
+        // Pulled the cacheData down id it is there
+        var cacheData = github_api.cache.get(requestName, filepath);
+
+        if (cacheData) {
+
+            if (uniqueId == cacheData.uniqueId) {
+
+                // Dont have to do anything
+                grunt.log.writeln( filepath + " is already up-to-date. (No data has been written)");
+
+                cb(true);
+
+            } else {
+
+                // Update the cache
+                github_api.cache.set(requestName, filepath.split(".")[0], requestType, uniqueId);
+
+                cb(false);
+
+            }
+
+        } else {
+
+            github_api.cache.set(requestName, filepath.split(".")[0], requestType, uniqueId);
+
+            // File needs to be written
+            cb(false);
+        }
+
+
+    };
+
+    // Function builds write requests.
     var prepWrite = function(github_api, collection, requestType, cb) {
 
         var data = false,
             request = false,
             filepath = false;
 
-        // first determine if we are handling data or a file.
-        if ((requestType === "data" && collection.length === 1) || requestType === "file") {
+        if (collection.length > 0) {
 
-            data = collection[0][0];
-            request = collection[0][1];
-            filepath = generate.filepath(true, request, requestType);
 
-        } else {
+            if ((requestType === "data" && collection.length === 1) || requestType === "file") {
 
-            data = generate.data(collection);
-            request = collection[0][1];
-            filepath = generate.filepath(false, request, requestType);
+                data = collection[0][0];
+                request = collection[0][1];
+                filepath = generate.filepath(true, request, requestType);
 
-        }
+            } else {
 
-        // Do a quick data verification. If a message was returned it most likly means we have no real data.
-        if (verifyData(data)) {
+                data = generate.data(collection);
+                request = collection[0][1];
+                filepath = generate.filepath(false, request, requestType);
 
-            // Check if the cache should be consulted
+            }
+
             if (request[2].options.task.cache) {
 
-                // Check the request type, if its file the unquie id is the sha
-                // for data we have to
-                var target = request[2].name,
-                    cacheName = filepath,
-                    uniqueId = "";
+                checkCache(github_api, filepath, data, request[2].name, requestType, function(skip) {
 
-                // Generate/ Gather all of the peoper cache information
-                if (requestType === "file") {
-
-                    uniqueId = data.sha;
-
-                } else {
-
-                    // Turn the data into a string
-                    var jStr = JSON.stringify(data);
-
-                    // Now generate a sha out of it and convert it to a hex encoding
-                    uniqueId = crypto.createHmac("sha", jStr);
-                    uniqueId = uniqueId.digest('hex');
-
-                }
-
-                var cacheData = github_api.cache.get(request[2].name, filepath);
-
-                if (cacheData) {
-
-                    if (uniqueId == cacheData.uniqueId) {
-
-                        // Dont have to do anything
-                        grunt.log.writeln( filepath + " is already up-to-date. (No data has been written)");
-
-                        cb();
-
-                    } else {
-
-                        // Update the cache
-                        github_api.cache.set(request[2].name, filepath.split(".")[0], requestType, uniqueId);
-
-                        writeFile(filepath, data, requestType, function() {
-                            grunt.log.writeln( filepath + " was written to disk.");
-
-                            cb();
-                        });
-
+                    if (!skip){
+                        writeQueue.push([filepath, data, requestType]);
                     }
 
-                } else {
-
-                    github_api.cache.set(request[2].name, filepath.split(".")[0], requestType, uniqueId);
-
-                    // File needs to be written
-                    writeFile(filepath, data, requestType, function() {
-                        grunt.log.writeln( filepath + " was written to disk.");
-
-                        cb();
-                    });
-                }
-
-
-            } else {
-
-                // Cache was mark to be ignroed so we will write the data reguardless.
-                writeFile(filepath, data, requestType, function() {
-                    grunt.log.writeln( filepath + " was written to disk.");
-
                     cb();
+
                 });
 
-            }
-
-        } else {
-
-            // Verification failed. Move along.
-            cb();
-        }
-
-    };
-
-    var verifyData = function(data) {
-
-
-        if (grunt.util.kindOf(data) == "object") {
-
-            // Check for the message property.
-            var message = data.message || false;
-
-            // Check to see if there there is a message property returnef.
-            if (message) {
-
-                grunt.log.writeln(message);
-
-                return false;
-
             } else {
 
-                return true;
+                writeQueue.push([filepath, data, requestType]);
+
+                cb();
+
             }
+
 
         } else {
 
-            // Data is not a object, can not verify
-            return true;
+            // There was nothing in the collection to write.
+            cb();
 
         }
 
     };
 
+    // Utilit function too write files.
     var writeFile = function(filepath, data, requestType, cb) {
 
         function write() {
@@ -474,9 +479,6 @@ module.exports = function(grunt) {
                             dest = origSrc[0];
                             dest = (request[2].options.connection.path).split("?")[0]
 
-                            //console.log(request[2].options.connection.path);
-                            //console.log(dest);
-
                         } else {
 
                             // Source if from a larger array. so we will used the requested string instead.
@@ -524,7 +526,7 @@ module.exports = function(grunt) {
             return dest;
         },
 
-        data: function(collection) {
+        data: function(collection, cb) {
 
             // Create a new object for the data to be put together
             var finishedObject = {}
