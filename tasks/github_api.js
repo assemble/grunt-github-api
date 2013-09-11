@@ -1,284 +1,301 @@
 'use strict';
 
-// Extra node modules
-var https = require('https');
-var fs = require('fs');
-var crypto = require('crypto');
-var mkdirp = require('mkdirp');
-
-// Project Arrays
-var requestQueue = [];
-var writeQueue = [];
-
 module.exports = function(grunt) {
 
-    var github_api = require('./lib/api');
+    var github_api = require('./lib/lib');
 
     // Setup the new multi task
     grunt.registerMultiTask('github', 'Simple Script to query the github API.', function() {
 
         var done = this.async();
+        var kindOf = grunt.util.kindOf;
 
-        // Task Functions
-        //=============================================================================================================
+        var generateRequest = function(github_api, next) {
 
-        var generateRequests = function(github_api, next) {
+            function processPaths(src, dest, options, cb) {
 
-            var taskDetails = github_api.taskDetails,
-                taskData = taskDetails.data,
-                taskOptions = taskDetails.options;
+                // Clean up the src
+                src = github_api.path.cleaner(src, true, false);
 
-            if (taskOptions.task.action === "request") {
-
-                var src = false,
-                    request = false;
-
-                // Check to make sure a source is defined
-                if (taskData.src) {
-                    src = taskData.src;
+                // Clean up the dest
+                if (dest) {
+                    dest = github_api.path.cleaner(dest, false, false);
+                } else {
+                    dest = github_api.path.cleaner(src, false, false);
                 }
 
-                if (!src || src.length == 0) {
-                    grunt.warn('No source was defined for ' + github_api.name);
-                    done(false);
+                // Add output path if it exists.
+                if (options.output.path) {
+                    dest = options.output.path + "/" + dest;
                 }
 
-                var parameters = false;
-
-                // Check for additional filters and oAuth
-                if (taskOptions.oAuth || taskOptions.filters) {
-
-                    parameters = generate.parameters(taskOptions.oAuth, taskOptions.filters);
-
+                // Create src parameters
+                if (options.filters || options.oAuth) {
+                    src += "?" + github_api.path.parameters(options.filters, options.oAuth);
                 }
 
-                // Finally add parameters to the request path if they exist
-                if (parameters) {
+                github_api.request.add(options.connection, src, dest, options.task);
 
-                    for (var i = 0, len = src.length; i < len; i++ ) {
-                        src[i] += "?" + parameters;
-                    }
+                if (cb) cb();
 
-                }
+            }
 
-                // check to see if a user added a common request for multiple source
-                if (taskOptions.task.concat) {
+            var data = github_api.data,
+                options = github_api.options;
 
-                    if (grunt.util.kindOf(src) === "array" && taskDetails.data.dest ) {
+            // Only execute if source exists
+            if (data.src) {
 
-                        if (src.length > 1) {
+                if (kindOf(data.src) === "array") {
 
-                            for (var i = 0, len = src.length; i < len; i++ ) {
-                                requestQueue.push([src[i], taskOptions.connection, taskDetails]);
+                    (function multiSrc(dataSrc) {
+
+                        var curSrc = dataSrc.shift();
+
+                        processPaths(curSrc, data.dest || false, options, function() {
+
+                            if (dataSrc.length === 0) {
+
+                                next(github_api);
+                            } else {
+
+                                multiSrc(dataSrc);
                             }
 
-                        } else {
+                        });
 
-                             requestQueue.push([src[0], taskOptions.connection, taskDetails]);
-
-                        }
-
-                    } else {
-
-                        if (taskDetails.options.task.type == "data") {
-                            grunt.log.writeln("You need to define a destination name if you are contcating multiple data sets");
-                        } else {
-                            grunt.log.writeln("You can not combind files with this plugin!");
-                        }
-
-                    }
+                    })(data.src);
 
                 } else {
 
-                    if (grunt.util.kindOf(src) === "array") {
-                        for (var i = 0, len = src.length; i < len; i++ ) {
-                            requestQueue.push([src[i], taskOptions.connection, taskDetails]);
-                        }
-                    } else {
-                        requestQueue.push([src, taskOptions.connection, taskDetails]);
-                    }
+                    processPaths(data.src, data.dest || false, options, function() {
+
+                        next(github_api);
+
+                    });
 
                 }
 
-            }
-
-            // Move to the next step
-            next(github_api);
-        };
-
-        var sendRequests = function(github_api, next) {
-
-            if (requestQueue.length !== 0) {
-
-                var collection = [];
-
-                (function connect(requestQueue, collection) {
-
-                    // Get the next request of the queue
-                    var request = requestQueue.shift(),
-                        taskSettings = request[2].options.task;
-
-                    request[1].path = request[0];
-
-                    var req = https.request(request[1], function(res) {
-
-                        var data = "";
-                        res.setEncoding('utf8');
-
-                        res.on('data', function (chunk) {
-                            data += chunk;
-                        });
-
-                        res.on('end', function() {
-
-                            var reqData = JSON.parse(data);
-
-                            if (reqData.message) {
-
-                                grunt.log.writeln("Request failed, GitHub responded - " + reqData.message);
-
-                            } else {
-
-                                collection.push([reqData, request]);
-
-                            }
-
-                            // If there is nothing else to do go and prep the data that needs to be written
-                            if (requestQueue.length === 0) {
-
-                                if (collection.length > 0) {
-
-                                    prepWrite(github_api, collection, taskSettings.type, function() {
-
-                                        // Flush the collection as it was sent for writting
-                                        collection = [];
-
-                                        // Noting was left move to the next step.
-                                        next(github_api);
-
-                                    });
-
-                                } else {
-
-                                    // Noting was left move to the next step.
-                                    next(github_api);
-                                }
-
-                            // Check to see if the data is suppose to be seperated.
-                            } else if (requestQueue.length > 0 && !taskSettings.concat) {
-
-                                prepWrite(github_api, collection, taskSettings.type, function() {
-
-                                    // Flush the collection as it was sent for writting
-                                    collection = [];
-
-                                    // Continue to the next request
-                                    connect(requestQueue, collection);
-                                });
-
-                            } else {
-
-                                // Continue to the next request
-                                connect(requestQueue, collection);
-
-                            }
-
-                        });
-
-                    });
-
-                    req.on('error', function(e){
-                        grunt.log.writeln(e);
-                    })
-
-                    req.end();
-
-                })(requestQueue, collection);
-
             } else {
 
-                // Move to the next task if no requests exist.
                 next(github_api);
             }
-
+ 
         };
 
-        // Task to
-        var writeRequests = function(github_api, next) {
+        var processRequest = function(github_api, next) {
 
-            // Make sure there is something in queue to work with,
-            if (writeQueue.length !== 0) {
+            github_api.request.send(function(responseArray) {
 
-                //var currentQueue = writeQueue;
+                (function nextResponse(responseArray) {
 
-                (function processQueue(currentQueue) {
+                    function leaveLoop() {
 
-                    var wItem = currentQueue.shift();
+                        if (responseArray.length === 0) {
 
-                    writeFile(wItem[0], wItem[1], wItem[2], function(){
+                            next(github_api);
+                        } else {
 
-                        grunt.log.writeln("File: " + wItem[0] + " was written");
+                            nextResponse(responseArray);
+                        }
 
-                        if (currentQueue.length > 0) {
+                    }
 
-                            processQueue(currentQueue);
+                    function checkCache(data, dest, task, cb) {
+
+                        var destPath = dest.split(".")[0];
+                        var name = task.name;
+                        var uniqueId = "";
+
+                        if (task.type === "file") {
+
+                            uniqueId = data[0].sha;
 
                         } else {
 
-                            writeQueue = [];
+                            var jStr = JSON.stringify(data);
 
-                            next(github_api);
+                            // Deal with the strange changing gravatar url that breaks cache.
+                            jStr = jStr.replace(/https:\/\/\d\.gravatar/g, "https://gravatar");
+
+                            uniqueId = github_api.cache.generateId(jStr);
 
                         }
 
-                    });
+                        var cache = github_api.cache.get(name, destPath);
 
-                })(writeQueue);
+                        if (cache) {
 
-            } else {
+                            if (uniqueId === cache.uniqueId) {
 
-                next(github_api);
+                                grunt.log.writeln( destPath + " is already up-to-date. (No data has been written)");
 
-            }
+                                cb(false);
 
+                            } else {
+
+                                github_api.cache.set(name, destPath, task.type, uniqueId);
+
+                                cb(true);
+
+                            }
+
+                        } else {
+
+                            github_api.cache.set(name, destPath, task.type, uniqueId);
+
+                            cb(true);
+                        }
+                        
+                    }
+
+                    var res = responseArray.shift(),
+                        dest = res[0],
+                        data = res[1],
+                        task = res[2];
+
+                    if (data.length === 1) {
+
+                        if (task.cache) {
+
+                            checkCache(data, dest, task, function(results) {
+
+                                if (results) {
+                                    github_api.write.add(data, dest, task.type);
+                                }
+
+                                console.log("cache results:" + results);
+                                console.log("leave loop");
+
+                                leaveLoop();
+
+                            });
+
+                        } else {
+
+                            github_api.write.add(data, dest, task.type);
+
+                            leaveLoop();
+
+                        }
+
+                    } else {
+
+                        (function collectData(data, type, collection, pos, cb) {
+
+                            if (type === "file") {
+
+                                grunt.warn("Files can not merge at this time with this plugin");
+
+                                cb();
+
+                            } else {
+
+                                collection[pos] = data.shift();
+
+                                if (data.length === 0) {
+
+                                    if (task.cache) {
+
+                                        checkCache(data, dest, task, function(results) {
+
+                                            if (results) {
+
+                                                github_api.write.add(collection, dest, task.type);
+
+                                            }
+
+                                            cb();
+
+                                        });
+
+                                    } else {
+
+                                        github_api.write.add(collection, dest, task.type);
+
+                                        cb();
+
+                                    }
+
+                                } else {
+
+                                    collectData(data, type, collection, pos++, cb)
+
+                                }
+
+                            }
+
+                        })(data, task.type, {}, 0, function(){
+
+                            leaveLoop();
+
+                        });
+
+                    }
+
+
+                })(responseArray)
+
+            });
         };
 
-        // Task specificaly to save the cache
-        var saveCache = function(github_api, next) {
+        var writeResponse = function(github_api, next) {
 
-            var cache = github_api.cache.dump();
+            console.log("write response");
 
-            if (cache.changed) {
+            github_api.write.save(function() {
 
-                writeFile(cache.location, cache.contents, "data", function() {
+                next(github_api);
+            });
+        };
 
-                    // Unmarked the cache as changed.
+        var updateCache = function(github_api, next) {
+
+            console.log("update queue");
+
+            // Check to see if the cache status is true. If so we need to
+            // Generate one more write.
+            if (github_api.cache.status) {
+
+                var cacheData = github_api.cache.dump();
+
+                var contents = cacheData.contents;
+                var location = cacheData.location;
+                var task = {
+                    type: 'data'
+                };
+
+                // Add the cache write to the writeQueue
+                github_api.write.add(contents, location, "data");
+
+                /*
+                github_api.write.save(function() {
+
                     github_api.cache.saved();
 
-                    grunt.log.writeln( "Cache has been updated." );
+                    grunt.log.writeln("Updated Cache!");
 
                     next(github_api);
                 });
+                */
 
+                next(github_api);
 
             } else {
 
                 next(github_api);
             }
 
-        };
-
-        // Process stepper and executer.
-        //=============================================================================================================
+        }
 
         var process = github_api.init(this, grunt)
-            .step(generateRequests) // Generate requests from each task
-            .step(sendRequests) // Send all requests and save/write data as needed
-            .step(writeRequests) // Check and write any requests that should go to disk.
-            .step(saveCache) // Save cache data
+            .step(generateRequest)
+            .step(processRequest)
+            .step(writeResponse)
+            .step(updateCache)
             .execute(function(err, results) {
 
-                if(err) {
+                if (err) {
                     grunt.warn(err);
                     done(false);
                 }
@@ -288,288 +305,5 @@ module.exports = function(grunt) {
             });
 
     });
-
-    // Helper Functions
-    //=============================================================================================================
-
-    var checkCache = function(github_api, filepath, data, requestName, requestType, cb) {
-
-        var uniqueId = "";
-
-        // Generate/ Gather all of the peoper cache information
-        if (requestType === "file") {
-
-            uniqueId = data.sha;
-
-        } else {
-
-            // Turn the data into a string
-            var jStr = JSON.stringify(data);
-
-            // Deal with the strange changing gravatar url that breaks cache.
-            jStr = jStr.replace(/https:\/\/\d\.gravatar/g, "https://gravatar");
-
-            // Now generate a sha out of it and convert it to a hex encoding
-            uniqueId = crypto.createHmac("sha", jStr);
-            uniqueId = uniqueId.digest('hex');
-
-        }
-
-        // Pulled the cacheData down id it is there
-        var cacheData = github_api.cache.get(requestName, filepath);
-
-        if (cacheData) {
-
-            if (uniqueId == cacheData.uniqueId) {
-
-                // Dont have to do anything
-                grunt.log.writeln( filepath + " is already up-to-date. (No data has been written)");
-
-                cb(true);
-
-            } else {
-
-                // Update the cache
-                github_api.cache.set(requestName, filepath.split(".")[0], requestType, uniqueId);
-
-                cb(false);
-
-            }
-
-        } else {
-
-            github_api.cache.set(requestName, filepath, requestType, uniqueId);
-
-            // File needs to be written
-            cb(false);
-        }
-
-
-    };
-
-    // Function builds write requests.
-    var prepWrite = function(github_api, collection, requestType, cb) {
-
-        var data = false,
-            request = false,
-            filepath = false;
-
-        if (collection.length > 0) {
-
-
-            if ((requestType === "data" && collection.length === 1) || requestType === "file") {
-
-                data = collection[0][0];
-                request = collection[0][1];
-                filepath = generate.filepath(true, request);
-
-            } else {
-
-                data = generate.data(collection);
-                request = collection[0][1];
-                filepath = generate.filepath(false, request);
-
-            }
-
-            if (request[2].options.task.cache) {
-
-                checkCache(github_api, filepath.split(".")[0], data, request[2].name, requestType, function(skip) {
-
-                    if (!skip){
-                        writeQueue.push([filepath, data, requestType]);
-                    }
-
-                    cb();
-
-                });
-
-            } else {
-
-                writeQueue.push([filepath, data, requestType]);
-
-                cb();
-
-            }
-
-
-        } else {
-
-            // There was nothing in the collection to write.
-            cb();
-
-        }
-
-    };
-
-    // Utilit function too write files.
-    var writeFile = function(filepath, data, requestType, cb) {
-
-        function write() {
-
-            if (requestType === "data") {
-
-                var buffer = new Buffer(JSON.stringify(data, null, 4));
-
-            } else {
-
-                var buffer = new Buffer(data, 'base64').toString('utf8');
-
-            }
-
-            //fs.writeFile(filename, data, [options], callback)
-            fs.writeFile(filepath, buffer, function(err) {
-
-                if (err) {
-                    console.log(err);
-                }
-
-                cb();
-
-            });
-        }
-
-        // Figure out the directory path
-        var dirPath = filepath.split("/");
-
-        // Remove the last filename
-        dirPath.pop();
-
-        // Reconstruct the file path based on the split array.
-        dirPath = dirPath.join("/");
-
-        // Check to see if the path exists
-        fs.exists(dirPath, function (exists) {
-            if (!exists) {
-
-                mkdirp(dirPath, function (err) {
-
-                    if (err) {
-                        grunt.log.writeln("Error: Creating data directory path - " + dirPath);
-                    } else {
-
-                        // Now the directory structure is in place write the file.
-                        write();
-                    }
-
-                });
-
-            } else {
-
-                // The directories exists, write the file
-                write();
-            }
-
-        });
-
-    }
-
-    // Generate functions
-    var generate = {
-
-        filepath: function(singleFile, request) {
-
-            if (singleFile) {
-
-                var dest = request[2].data.dest || false,
-                    origSrc = request[2].data.src;
-
-                // Check if dest was not defined. If not we are going to use the defautl
-                if (!dest) {
-
-                    // No source path was definded, check to see what the original sorce was
-                    if (grunt.util.kindOf(origSrc) == "array") {
-
-                        // Check to see if the length is really an array of one, if so use that source
-                        if (origSrc.length > 1) {
-
-                            dest = origSrc[0];
-                            dest = (request[2].options.connection.path).split("?")[0]
-
-                        } else {
-
-                            // Source if from a larger array. so we will used the requested string instead.
-                            dest = request[0];
-
-                        }
-
-                    } else {
-
-                        // only other thing could have been a string so set the dest to the source request
-                        dest = origSrc;
-
-                    }
-
-                }
-
-            } else {
-
-                // Multiple data sets return that will need to be concatinated into one.
-                dest = request[2].data.dest
-
-            }
-
-            // Take any parameters off of the dest string if they exist
-            dest = dest.split("?")[0];
-
-            // Add output directory if it is defined
-            if (request[2].options.output.path) {
-
-                var outputPath = request[2].options.output.path;
-
-                if(dest.charAt(0) === "/") {
-                    dest = dest.substring(1);
-                }
-
-                if (outputPath.charAt(outputPath.length-1) === "/") {
-                    dest = outputPath + dest;
-                } else {
-                    dest = outputPath + "/" + dest;
-                }
-
-
-            }
-
-            return dest;
-        },
-
-        data: function(collection, cb) {
-
-            // Create a new object for the data to be put together
-            var finishedObject = {}
-
-            for (var i = 0, len = collection.length; i < len; i++ ) {
-
-                // Add the current
-                finishedObject[i] = collection[i][0];
-
-            }
-
-            return finishedObject;
-
-        },
-
-        parameters: function() {
-
-            var temp = [];
-
-            for (var i=0; i<arguments.length; i++) {
-
-                if (arguments[i]) {
-
-                    for (var item in arguments[i]) {
-
-                        temp.push(item + "=" + arguments[i][item]);
-
-                    }
-
-                }
-
-            }
-
-            return temp.join("&");
-
-        }
-
-    }
 
 };

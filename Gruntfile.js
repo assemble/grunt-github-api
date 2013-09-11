@@ -7,9 +7,6 @@ module.exports = function(grunt) {
     github: {
       exampleIssues: {
         options: {
-            oAuth: {
-                access_token: ""
-            },
             filters: {
                 state: "open"
             },
@@ -21,18 +18,10 @@ module.exports = function(grunt) {
         dest: "combinded-issues.json"
       },
       seperateIssues: {
-        options: {
-            oAuth: {
-                access_token: ""
-            }
-        },
-        src: ['/repos/jeffherb/grunt-github-api-example/issues', '/repos/jeffherb/grunt-github-api/issues'],
+        src: ['/repos/jeffherb/grunt-github-api-example/issues','/repos/jeffherb/grunt-github-api/issues'],
       },
       examplePkg: {
         options: {
-            oAuth: {
-                access_token: ""
-            },
             task: {
                 type: "file",
             }
