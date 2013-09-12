@@ -164,9 +164,6 @@ module.exports = function(grunt) {
                                     github_api.write.add(data, dest, task.type);
                                 }
 
-                                console.log("cache results:" + results);
-                                console.log("leave loop");
-
                                 leaveLoop();
 
                             });
@@ -185,7 +182,7 @@ module.exports = function(grunt) {
 
                             if (type === "file") {
 
-                                grunt.warn("Files can not merge at this time with this plugin");
+                                console.log("Files can not merge at this time with this plugin");
 
                                 cb();
 
@@ -241,35 +238,23 @@ module.exports = function(grunt) {
 
         var writeResponse = function(github_api, next) {
 
-            console.log("write response");
-
             github_api.write.save(function() {
 
                 next(github_api);
             });
+
         };
 
         var updateCache = function(github_api, next) {
 
-            console.log("update queue");
-
             // Check to see if the cache status is true. If so we need to
             // Generate one more write.
-            if (github_api.cache.status) {
+
+            if (github_api.cache.status()) {
 
                 var cacheData = github_api.cache.dump();
 
-                var contents = cacheData.contents;
-                var location = cacheData.location;
-                var task = {
-                    type: 'data'
-                };
-
-                // Add the cache write to the writeQueue
-                github_api.write.add(contents, location, "data");
-
-                /*
-                github_api.write.save(function() {
+                github_api.write.write(cacheData.contents, cacheData.location, 'data', function() {
 
                     github_api.cache.saved();
 
@@ -277,9 +262,9 @@ module.exports = function(grunt) {
 
                     next(github_api);
                 });
-                */
+                
 
-                next(github_api);
+                //next(github_api);
 
             } else {
 
@@ -296,7 +281,7 @@ module.exports = function(grunt) {
             .execute(function(err, results) {
 
                 if (err) {
-                    grunt.warn(err);
+                    console.log(err);
                     done(false);
                 }
 

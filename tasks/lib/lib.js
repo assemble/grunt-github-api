@@ -158,7 +158,7 @@ var github_api = function() {
                         // Check for an error response from the GitHub API.
                         if (reqData.message) {
 
-                            grunt.warn("GitHub returned an error: " + reqData.message);
+                            console.log("GitHub returned an error: " + reqData.message);
 
                         } else {
 
@@ -201,7 +201,7 @@ var github_api = function() {
                 });
 
                 req.on('error', function(e){
-                    grunt.log.writeln(e);
+                    console.log(e);
                 })
 
                 req.end();
@@ -220,39 +220,39 @@ var github_api = function() {
 
         },
 
-        save: function(cb) {
+        write: function(data, dest, type, cb) {
 
-            function write(data, dest, type, cb) {
+            if (type === "data") {
 
-                if (type === "data") {
+                var buffer = new Buffer(JSON.stringify(data, null, 4));
 
-                    var buffer = new Buffer(JSON.stringify(data, null, 4));
+            } else {
 
-                } else {
-
-                    var buffer = new Buffer(data[0].content, 'base64').toString('utf8');
-
-                }
-                
-                fs.writeFile(dest, buffer, function(err) {
-
-                    grunt.log.writeln(dest + " was written to disk.");
-
-                    if (err) {
-                        grunt.warn(err);
-                    }
-
-                    cb();
-
-                });
+                var buffer = new Buffer(data[0].content, 'base64').toString('utf8');
 
             }
+            
+            fs.writeFile(dest, buffer, function(err) {
 
-            console.log(writeQueue.length);
+                console.log(dest + " was written to disk.");
+
+                if (err) {
+                    console.log(err);
+                }
+
+                cb();
+
+            });
+
+        },
+
+        save: function(cb) {
 
             if (writeQueue.length > 0) {
 
-                (function nextFile(writeQueue) {
+                (function nextFile(writeQueue, w) {
+
+                    //var w = (write.write);
 
                     var wq = writeQueue.shift();
 
@@ -273,11 +273,11 @@ var github_api = function() {
                             mkdirp(dirPath, function (err) {
 
                                 if (err) {
-                                    grunt.log.writeln("Error: Creating data directory path - " + dirPath);
+                                    console.log("Error: Creating data directory path - " + dirPath);
                                 } else {
 
                                     // Now the directory structure is in place write the file.
-                                    write(wq[0], wq[1], wq[2], function(){
+                                    write.write(wq[0], wq[1], wq[2], function(){
 
                                         if (writeQueue.length === 0) {
 
@@ -285,7 +285,7 @@ var github_api = function() {
 
                                         } else {
 
-                                            nextFile(writeQueue, cb);
+                                            nextFile(writeQueue, w);
 
                                         }
 
@@ -297,7 +297,7 @@ var github_api = function() {
                         } else {
 
                             // The directories exists, write the file
-                            write(wq[0], wq[1], wq[2], function(){
+                            write.write(wq[0], wq[1], wq[2], function(){
 
                                 if (writeQueue.length === 0) {
 
@@ -305,7 +305,7 @@ var github_api = function() {
 
                                 } else {
 
-                                    nextFile(writeQueue, cb);
+                                    nextFile(writeQueue, w);
 
                                 }
 
@@ -314,7 +314,7 @@ var github_api = function() {
 
                     });
 
-                })(writeQueue);
+                })(writeQueue, this);
 
             } else {
 
