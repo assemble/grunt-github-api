@@ -1,188 +1,361 @@
 'use strict';
 
-// Extra node modules
-var https = require('https');
-var fs = require('fs');
-
-
 module.exports = function(grunt) {
 
-    /*
-     * Function writes the pure output returned from the request NO ENCODING CHANGES
-     *
-     * @param {object} | options - grunt github tasks properties
-     * @param {string} | dest - destination for contents being saved to disk
-     * @param {function} | callback - grunt asyn callback function
-     */
-    function sendRequest(options, dest, callback) {
-
-        // Make the request
-        var req = https.request(options, function(res) {
-
-            // Returned JSON
-            var output = "";
-            res.setEncoding('utf8');
-
-            // Function to collect the data as the chunks appear.
-            res.on('data', function (chunk) {
-                output += chunk;
-            });
-
-            // Function that runs when all the requested data has been returned.
-            res.on('end', function() {
-
-                // Check to see if a screen dump flag is true
-                if (options.screenDump) {
-                    grunt.log.writeln(output);
-                }
-
-                // Check to see if a dest file is defined is so output it
-                if (dest) {
-                    
-                    // Check to see what the user expected back (data or a file).
-                    if (options.reqType === "file") {
-
-                        // Call write file function
-                        writeFile(dest, output, options.fileEncode);
-
-                    } else {
-
-                        // Call function to write the native data that was returned
-                        writeRaw(dest, output);
-
-                    }
-
-                    // Let the user know that the write was successful
-                    grunt.log.writeln("File: " + dest + " was created!");
-
-                }
-
-                // Return the async callback as true.
-                callback(true);
-
-            });
-
-        });
-
-        // Request failed! Let the user know
-        req.on('error', function(err) {
-            grunt.log.writeln(err.message);
-        });
-
-        // End the request
-        req.end();
-
-    }
-
-    /*
-     * Function writes the pure output returned from the request NO ENCODING CHANGES
-     *
-     * @param {string} | dest - file output destination path and name
-     * @param {object} | output - json returned from github.
-     */
-    function writeRaw(dest, output) {
-        grunt.file.write(dest, output);
-    }
-
-    /*
-     * Function writes the contents of the requested file.
-     *
-     * @param {string} | dest - file output destination path and name
-     * @param {object} | output - json returned from github.
-     * @param {string} | encode - desired file encoding type.
-     */
-    function writeFile(dest, output, encode) {
-
-        // Convert the requested response into a usable object then create a
-        // buffer to switch the content from one encoding type to another (encode)
-        var requestedFile = JSON.parse(output),
-            buffer = new Buffer(requestedFile.content, requestedFile.encoding).toString(encode);
-
-        // Write the properly encode file to disk
-        grunt.file.write(dest, buffer);
-
-    }
-
-    /*
-     * Function to build the query object
-     *
-     * @param {object} | paramObj - object containing all of the differnt parameters
-     * @param {boolean} | manyParamCheck - simple flag to determine the appended parameters content.
-     */
-    function buildReq(paramObj, manyParamCheck) {
-
-        var path = "";
-
-        // Loop through all parameter and add them to the path
-        for (var param in paramObj) {
-
-            // Check if its the first item
-            if (!manyParamCheck) {
-                path += param + "=" + paramObj[param];
-                manyParamCheck = true;
-
-            } else {
-                path += "&" + param + "=" + paramObj[param];
-            }
-        }
-
-        return path;
-    }
+    var github_api = require('./lib/lib');
 
     // Setup the new multi task
     grunt.registerMultiTask('github', 'Simple Script to query the github API.', function() {
 
-        // Override options
-        var options = this.options({
-            host: 'api.github.com',
-            path: '',
-            method: 'GET',
-            headers: {
-                'User-Agent': 'node-http/0.10.1',
-                'Content-Type': 'application/json'
-            },
-            filters: {},
-            oAuth: {},
-            screenDump: false,
-            reqType: "data",
-            fileEncode: "utf8"
-        });
+        var done = this.async();
+        var kindOf = grunt.util.kindOf;
 
-        var cb = this.async();
+        var getAPILimits = function(github_api, next) {
 
-        // Loop through all the defined tasks.
-        this.files.forEach(function(f) {
+            // Check the rate limits only if the task is using a non oAuth access_token
+            if (!github_api.options.oAuth) {
 
-            var path = "?",
-                manyPrarams = false,
-                taskOptions = options;
+                github_api.request.add(github_api.options.connection, '/rate_limit', false, false);
 
-            // Check to see if the filter have been defined
-            if (Object.keys(taskOptions.filters).length > 0) {
+                github_api.request.send(function(responseArray) {
 
-               path += buildReq(taskOptions.filters, manyPrarams);
+                    var requests = github_api.data.src,
+                        rateOptions = github_api.options.rateLimit,
+                        res = responseArray.shift(),
+                        data = res[1],
+                        taskRequests = 0,
+                        RLRemainingLimit = data[0].rate.remaining,
+                        RLReset = data[0].rate.reset;
 
-               // If we are here then at least on filter was defined and added. Set to true
-               manyPrarams = true;
+                    // Determine how many request will be used in the current request.
+                    if (kindOf(requests) == "array") {
+                        taskRequests = requests.length;
+                    } else {
+                        taskRequests = 1;
+                    }
+
+                    // Clean up reset date
+                    RLReset = grunt.template.date((RLReset * 1000), "h:MM:ss TT");
+
+                    // Check to see if the API is close or about to run out
+                    if (RLRemainingLimit < taskRequests) {
+
+                        console.log("You do not have enough public API request remaining to complete this task. Skipping this task.");
+
+                        next(github_api, true);
+
+                    } else {
+
+                        if (RLRemainingLimit == 0) {
+
+                        } else {
+
+                            if (RLRemainingLimit <= rateOptions.warning) {
+
+                                console.log("You are about to hit your public API request limit. To avoid this issue it is suggested that you add an oAuth access token if possible. Public API limit reset at: " + RLRemainingLimit);
+
+                                next(github_api);
+
+                            } else {
+
+                                // Nothing to worry about... This time!
+                                next(github_api);
+
+                            }                            
+
+                        }
+
+                    }
+
+                });
+
+            } else {
+
+                next(github_api);
+            }
+
+        };
+
+        var generateRequest = function(github_api, next) {
+
+            function processPaths(src, dest, options, cb) {
+
+                // Clean up the src
+                src = github_api.path.cleaner(src, true, false);
+
+                // Clean up the dest
+                if (dest) {
+                    dest = github_api.path.cleaner(dest, false, false);
+                } else {
+                    dest = github_api.path.cleaner(src, false, false);
+                }
+
+                // Add output path if it exists.
+                if (options.output.path) {
+                    dest = options.output.path + "/" + dest;
+                }
+
+                // Create src parameters
+                if (options.filters || options.oAuth) {
+                    src += "?" + github_api.path.parameters(options.filters, options.oAuth);
+                }
+
+                github_api.request.add(options.connection, src, dest, options.task);
+
+                if (cb) cb();
 
             }
 
-            // Check to see if there us an oAuth Token defined. (Tags on the parameters)
-            if (Object.keys(taskOptions.oAuth).length > 0) {
+            var data = github_api.data,
+                options = github_api.options;
 
-                path += buildReq(taskOptions.oAuth, manyPrarams);
+            // Only execute if source exists
+            if (data.src) {
 
+                if (kindOf(data.src) === "array") {
+
+                    (function multiSrc(dataSrc) {
+
+                        var curSrc = dataSrc.shift();
+
+                        processPaths(curSrc, data.dest || false, options, function() {
+
+                            if (dataSrc.length === 0) {
+
+                                next(github_api);
+                            } else {
+
+                                multiSrc(dataSrc);
+                            }
+
+                        });
+
+                    })(data.src);
+
+                } else {
+
+                    processPaths(data.src, data.dest || false, options, function() {
+
+                        next(github_api);
+
+                    });
+
+                }
+
+            } else {
+
+                next(github_api);
+            }
+ 
+        };
+
+        var processRequest = function(github_api, next) {
+
+            github_api.request.send(function(responseArray) {
+
+                (function nextResponse(responseArray) {
+
+                    function leaveLoop() {
+
+                        if (responseArray.length === 0) {
+
+                            next(github_api);
+                        } else {
+
+                            nextResponse(responseArray);
+                        }
+
+                    }
+
+                    function checkCache(data, dest, task, cb) {
+
+                        var destPath = dest.split(".")[0];
+                        var name = task.name;
+                        var uniqueId = "";
+
+                        if (task.type === "file") {
+
+                            uniqueId = data[0].sha;
+
+                        } else {
+
+                            var jStr = JSON.stringify(data);
+
+                            // Deal with the strange changing gravatar url that breaks cache.
+                            jStr = jStr.replace(/https:\/\/\d\.gravatar/g, "https://gravatar");
+
+                            uniqueId = github_api.cache.generateId(jStr);
+
+                        }
+
+                        var cache = github_api.cache.get(name, destPath);
+
+                        if (cache) {
+
+                            if (uniqueId === cache.uniqueId) {
+
+                                grunt.log.writeln( destPath + " is already up-to-date. (No data has been written)");
+
+                                cb(false);
+
+                            } else {
+
+                                github_api.cache.set(name, destPath, task.type, uniqueId);
+
+                                cb(true);
+
+                            }
+
+                        } else {
+
+                            github_api.cache.set(name, destPath, task.type, uniqueId);
+
+                            cb(true);
+                        }
+                        
+                    }
+
+                    var res = responseArray.shift(),
+                        dest = res[0],
+                        data = res[1],
+                        task = res[2];
+
+                    if (data.length === 1) {
+
+                        if (task.cache) {
+
+                            checkCache(data, dest, task, function(results) {
+
+                                if (results) {
+                                    github_api.write.add(data, dest, task.type);
+                                }
+
+                                leaveLoop();
+
+                            });
+
+                        } else {
+
+                            github_api.write.add(data, dest, task.type);
+
+                            leaveLoop();
+
+                        }
+
+                    } else {
+
+                        (function collectData(data, type, collection, pos, cb) {
+
+                            if (type === "file") {
+
+                                console.log("Files can not merge at this time with this plugin");
+
+                                cb();
+
+                            } else {
+
+                                collection[pos] = data.shift();
+
+                                if (data.length === 0) {
+
+                                    if (task.cache) {
+
+                                        checkCache(data, dest, task, function(results) {
+
+                                            if (results) {
+
+                                                github_api.write.add(collection, dest, task.type);
+
+                                            }
+
+                                            cb();
+
+                                        });
+
+                                    } else {
+
+                                        github_api.write.add(collection, dest, task.type);
+
+                                        cb();
+
+                                    }
+
+                                } else {
+
+                                    collectData(data, type, collection, pos++, cb)
+
+                                }
+
+                            }
+
+                        })(data, task.type, {}, 0, function(){
+
+                            leaveLoop();
+
+                        });
+
+                    }
+
+
+                })(responseArray)
+
+            });
+        };
+
+        var writeResponse = function(github_api, next) {
+
+            github_api.write.save(function() {
+
+                next(github_api);
+            });
+
+        };
+
+        var updateCache = function(github_api, next) {
+
+            // Check to see if the cache status is true. If so we need to
+            // Generate one more write.
+
+            if (github_api.cache.status()) {
+
+                var cacheData = github_api.cache.dump();
+
+                github_api.write.write(cacheData.contents, cacheData.location, 'data', function() {
+
+                    github_api.cache.saved();
+
+                    grunt.log.writeln("Updated Cache!");
+
+                    next(github_api);
+                });
+                
+
+                //next(github_api);
+
+            } else {
+
+                next(github_api);
             }
 
-            // Add the new path to the taskOptions
-            taskOptions.path = f.orig.src + path;
+        }
 
-            sendRequest(taskOptions, f.orig.dest, cb);
+        var process = github_api.init(this, grunt)
+            .step(getAPILimits)
+            .step(generateRequest)
+            .step(processRequest)
+            .step(writeResponse)
+            .step(updateCache)
+            .execute(function(err, results) {
 
+                if (err) {
+                    console.log(err);
+                    done(false);
+                }
 
-        });
+                done();
+
+            });
 
     });
-
 
 };
