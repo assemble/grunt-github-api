@@ -10,6 +10,72 @@ module.exports = function(grunt) {
         var done = this.async();
         var kindOf = grunt.util.kindOf;
 
+        var getAPILimits = function(github_api, next) {
+
+            // Check the rate limits only if the task is using a non oAuth access_token
+            if (!github_api.options.oAuth) {
+
+                github_api.request.add(github_api.options.connection, '/rate_limit', false, false);
+
+                github_api.request.send(function(responseArray) {
+
+                    var requests = github_api.data.src,
+                        rateOptions = github_api.options.rateLimit,
+                        res = responseArray.shift(),
+                        data = res[1],
+                        taskRequests = 0,
+                        RLRemainingLimit = data[0].rate.remaining,
+                        RLReset = data[0].rate.reset;
+
+                    // Determine how many request will be used in the current request.
+                    if (kindOf(requests) == "array") {
+                        taskRequests = requests.length;
+                    } else {
+                        taskRequests = 1;
+                    }
+
+                    // Clean up reset date
+                    RLReset = grunt.template.date((RLReset * 1000), "h:MM:ss TT");
+
+                    // Check to see if the API is close or about to run out
+                    if (RLRemainingLimit < taskRequests) {
+
+                        console.log("You do not have enough public API request remaining to complete this task. Skipping this task.");
+
+                        next(github_api, true);
+
+                    } else {
+
+                        if (RLRemainingLimit == 0) {
+
+                        } else {
+
+                            if (RLRemainingLimit <= rateOptions.warning) {
+
+                                console.log("You are about to hit your public API request limit. To avoid this issue it is suggested that you add an oAuth access token if possible. Public API limit reset at: " + RLRemainingLimit);
+
+                                next(github_api);
+
+                            } else {
+
+                                // Nothing to worry about... This time!
+                                next(github_api);
+
+                            }                            
+
+                        }
+
+                    }
+
+                });
+
+            } else {
+
+                next(github_api);
+            }
+
+        };
+
         var generateRequest = function(github_api, next) {
 
             function processPaths(src, dest, options, cb) {
@@ -274,6 +340,7 @@ module.exports = function(grunt) {
         }
 
         var process = github_api.init(this, grunt)
+            .step(getAPILimits)
             .step(generateRequest)
             .step(processRequest)
             .step(writeResponse)

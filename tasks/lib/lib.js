@@ -27,7 +27,7 @@ var github_api = function() {
         var defaultOptions = {
             output: {
                 path: "api-data",
-                cache: ".cache.json"
+                cache: ".cache.json",
             },
             connection: {
                 host: 'api.github.com',
@@ -41,6 +41,9 @@ var github_api = function() {
                 type: "data",
                 concat: false,
                 cache: true,
+            },
+            rateLimit: {
+                warning: 10,
             },
             filters: false,
             oAuth: false
@@ -99,13 +102,9 @@ var github_api = function() {
         var step = 0, totalSteps = steps.length, self = this;
 
         // Step through all the defined steps.
-        steps[step++](self, function next(github_api) {
+        steps[step++](self, function next(github_api, terminate) {
 
-            if (step < totalSteps) {
-
-                steps[step++](self, next);
-
-            } else {
+            if (terminate) {
 
                 if(cb) {
 
@@ -114,6 +113,26 @@ var github_api = function() {
                 } else {
 
                     return true;
+
+                }
+
+            } else {
+
+                if (step < totalSteps) {
+
+                    steps[step++](self, next);
+
+                } else {
+
+                    if(cb) {
+
+                        cb(null, true);
+
+                    } else {
+
+                        return true;
+
+                    }
 
                 }
 
@@ -221,6 +240,10 @@ var github_api = function() {
         },
 
         write: function(data, dest, type, cb) {
+
+            if (typeof(type) !== "string") {
+                type = type.type;
+            }
 
             if (type === "data") {
 
