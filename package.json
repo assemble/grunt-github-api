@@ -1,7 +1,7 @@
 {
   "name": "grunt-github-api",
   "description": "Grunt plugin used to query the Github API and save the returned JSON files locally.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "homepage": "https://github.com/JeffHerb/grunt-github-api",
   "author": {
     "name": "Jeffrey Herb",
