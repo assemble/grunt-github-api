@@ -71,7 +71,7 @@ github: {
                 concat: true
             }
         },
-        src: ['/repos/jeffherb/grunt-github-api-example/issues', '/repos/jeffherb/grunt-github-api/issues'],
+        src: ['/repos/assemble/grunt-github-api-example/issues', '/repos/assemble/grunt-github-api/issues'],
         dest: "combinded-issues.json"
     },
 
@@ -83,7 +83,7 @@ github: {
                 access_token: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
             }
         },
-        src: ['/repos/jeffherb/grunt-github-api-example/issues', '/repos/jeffherb/grunt-github-api/issues'],
+        src: ['/repos/assemble/grunt-github-api-example/issues', '/repos/assemble/grunt-github-api/issues'],
     },
 
     // Downloads a copy of the example.json file from GitHub.
@@ -93,7 +93,7 @@ github: {
                 type: "file",
             }
         },
-        src: '/repos/jeffherb/grunt-github-api-example/contents/example.json',
+        src: '/repos/assemble/grunt-github-api-example/contents/example.json',
     },
 }
 ```
