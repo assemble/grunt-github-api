@@ -98,4 +98,4 @@ github: {
 }
 ```
 
-Created and maintained by @JeffHerb.
+Created and maintained by [@JeffHerb](https://github.com/JeffHerb).
