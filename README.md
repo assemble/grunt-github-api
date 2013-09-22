@@ -97,3 +97,5 @@ github: {
     },
 }
 ```
+
+Created and maintained by @JeffHerb.
