@@ -1,23 +1,24 @@
 {
   "name": "grunt-github-api",
-  "description": "Grunt plugin used to query the Github API and save the returned JSON files locally.",
+  "description": "Query Github's API and save the returned JSON files locally.",
   "version": "0.2.1",
-  "homepage": "https://github.com/JeffHerb/grunt-github-api",
+  "homepage": "https://github.com/assemble/grunt-github-api",
   "author": {
     "name": "Jeffrey Herb",
-    "email": "herb.jeff@gmail.com"
+    "email": "herb.jeff@gmail.com",
+    "url": "https://github.com/jeffHerb"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com:JeffHerb/grunt-github-api.git"
+    "url": "git://github.com:assemble/grunt-github-api.git"
   },
   "bugs": {
-    "url": "https://github.com/JeffHerb/grunt-github-api/issues"
+    "url": "https://github.com/assemble/grunt-github-api/issues"
   },
   "licenses": [
     {
       "type": "MIT",
-      "url": "https://github.com/JeffHerb/grunt-github-api/blob/master/LICENSE-MIT"
+      "url": "https://github.com/assemble/grunt-github-api/blob/master/LICENSE-MIT"
     }
   ],
   "main": "Gruntfile.js",
@@ -29,12 +30,17 @@
     "mkdirp": "~0.3.5"
   },
   "devDependencies": {
-    "grunt": "~0.4.1"
-  },
-  "peerDependencies": {
-    "grunt": "~0.4.1"
+    "grunt": "~0.4.1",
+    "grunt-readme": "~0.1.4",
+    "grunt-contrib-jshint": "~0.6.4"
   },
   "keywords": [
-    "gruntplugin, github, pages, git, github pages"
+    "gruntplugin",
+    "assemble",
+    "api",
+    "json",
+    "github",
+    "github api",
+    "git"
   ]
 }

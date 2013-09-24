@@ -1,0 +1,55 @@
+[
+  {
+    "url": "https://api.github.com/repos/JeffHerb/buildsys/issues/1",
+    "labels_url": "https://api.github.com/repos/JeffHerb/buildsys/issues/1/labels{/name}",
+    "comments_url": "https://api.github.com/repos/JeffHerb/buildsys/issues/1/comments",
+    "events_url": "https://api.github.com/repos/JeffHerb/buildsys/issues/1/events",
+    "html_url": "https://github.com/JeffHerb/buildsys/issues/1",
+    "id": 18075864,
+    "number": 1,
+    "title": "fake issue for project testing",
+    "user": {
+      "login": "JeffHerb",
+      "id": 1133732,
+      "avatar_url": "https://0.gravatar.com/avatar/c57c435c2b599aa93a9f27c786ca6f73?d=https%3A%2F%2Fidenticons.github.com%2F8da3e6ad52f643fa6f8fe376de6a9e00.png",
+      "gravatar_id": "c57c435c2b599aa93a9f27c786ca6f73",
+      "url": "https://api.github.com/users/JeffHerb",
+      "html_url": "https://github.com/JeffHerb",
+      "followers_url": "https://api.github.com/users/JeffHerb/followers",
+      "following_url": "https://api.github.com/users/JeffHerb/following{/other_user}",
+      "gists_url": "https://api.github.com/users/JeffHerb/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/JeffHerb/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/JeffHerb/subscriptions",
+      "organizations_url": "https://api.github.com/users/JeffHerb/orgs",
+      "repos_url": "https://api.github.com/users/JeffHerb/repos",
+      "events_url": "https://api.github.com/users/JeffHerb/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/JeffHerb/received_events",
+      "type": "User"
+    },
+    "labels": [
+      {
+        "url": "https://api.github.com/repos/JeffHerb/buildsys/labels/duplicate",
+        "name": "duplicate",
+        "color": "cccccc"
+      },
+      {
+        "url": "https://api.github.com/repos/JeffHerb/buildsys/labels/enhancement",
+        "name": "enhancement",
+        "color": "84b6eb"
+      }
+    ],
+    "state": "open",
+    "assignee": null,
+    "milestone": null,
+    "comments": 0,
+    "created_at": "2013-08-14T20:46:26Z",
+    "updated_at": "2013-08-14T20:46:26Z",
+    "closed_at": null,
+    "pull_request": {
+      "html_url": null,
+      "diff_url": null,
+      "patch_url": null
+    },
+    "body": "testing"
+  }
+]

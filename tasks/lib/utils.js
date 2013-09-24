@@ -1,3 +1,12 @@
+/*!
+ * grunt-github-api
+ * https://github.com/assemble/grunt-github-api
+ * Authored by Jeffrey Herb <https://github.com/JeffHerb>
+ *
+ * Copyright (c) 2013 Jeffrey Herb, contributors
+ * Licensed under the MIT license.
+ */
+
 'use strict';
 
 // Include libraries
@@ -8,14 +17,14 @@ var mkdirp = require('mkdirp');
 
 var github_api = function() {
 
-    var steps = [],
-        requestQueue = [],
-        writeQueue = [],
-        cacheData = {
-            location: "",
-            contents: {},
-            changed: false,
-        };
+    var steps = [];
+    var requestQueue = [];
+    var writeQueue = [];
+    var cacheData = {
+        location: "",
+        contents: {},
+        changed: false
+    };
 
     var init = function(task, grunt) {
 
@@ -221,7 +230,7 @@ var github_api = function() {
 
                 req.on('error', function(e){
                     console.log(e);
-                })
+                });
 
                 req.end();
 
@@ -245,16 +254,13 @@ var github_api = function() {
                 type = type.type;
             }
 
+            var buffer;
             if (type === "data") {
-
-                var buffer = new Buffer(JSON.stringify(data, null, 4));
-
+                buffer = new Buffer(JSON.stringify(data, null, 4));
             } else {
-
-                var buffer = new Buffer(data[0].content, 'base64').toString('utf8');
-
+                buffer = new Buffer(data[0].content, 'base64').toString('utf8');
             }
-            
+
             fs.writeFile(dest, buffer, function(err) {
 
                 console.log(dest + " was written to disk.");
@@ -493,11 +499,46 @@ var github_api = function() {
         generateId: function(str) {
 
             str = crypto.createHmac("sha", str);
-            
+
             return str.digest('hex');
 
         }
 
+    };
+
+
+    /**
+     * Lib Helper functions
+     * @param  {Object} obj1
+     * @param  {Object} obj2
+     * @return {Object}
+     */
+    var mergeObject = function(obj1, obj2) {
+
+      for (var p in obj2) {
+
+        try {
+          // Property in destination object set; update its value.
+          if ( obj2[p].constructor === Object ) {
+
+            if (obj1[p].constructor !== Object) {
+                obj1[p] = {};
+            }
+            obj1[p] = mergeObject(obj1[p], obj2[p]);
+
+          } else {
+            obj1[p] = obj2[p];
+          }
+
+        } catch(e) {
+
+          // Property in destination object not set; create it and set its value.
+          obj1[p] = obj2[p];
+
+        }
+      }
+
+      return obj1;
     };
 
     // Return publically accessible items
@@ -511,42 +552,9 @@ var github_api = function() {
         write: write,
         cache: cache
 
-    }
+    };
 
-    /*************************************
-     ===   Lib Helper functions   ===
-     ************************************/
-    function mergeObject(obj1, obj2) {
 
-      for (var p in obj2) {
-
-        try {
-          // Property in destination object set; update its value.
-          if ( obj2[p].constructor === Object ) {
-
-            if (obj1[p].constructor !== Object) {
-                obj1[p] = {};
-            }
-
-            obj1[p] = mergeObject(obj1[p], obj2[p]);
-
-          } else {
-
-            obj1[p] = obj2[p];
-
-          }
-
-        } catch(e) {
-
-          // Property in destination object not set; create it and set its value.
-          obj1[p] = obj2[p];
-
-        }
-      }
-
-      return obj1;
-    }
-
-}
+};
 
 module.exports = exports = new github_api();
