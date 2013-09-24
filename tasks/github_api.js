@@ -11,7 +11,7 @@
 
 module.exports = function(grunt) {
 
-    var github_api = require('./lib/lib');
+    var github_api = require('./lib/utils');
 
     // Setup the new multi task
     grunt.registerMultiTask('github', 'Simple Script to query the github API.', function() {
@@ -28,54 +28,48 @@ module.exports = function(grunt) {
 
                 github_api.request.send(function(responseArray) {
 
-                    var requests = github_api.data.src,
-                        rateOptions = github_api.options.rateLimit,
-                        res = responseArray.shift(),
-                        data = res[1],
-                        taskRequests = 0,
-                        RLRemainingLimit = data[0].rate.remaining,
-                        RLReset = data[0].rate.reset;
+                    var requests = github_api.data.src;
+                    var rateOptions = github_api.options.rateLimit;
+                    var res = responseArray.shift();
+                    var data = res[1];
+                    var taskRequests = 0;
+                    var RLRemainingLimit = data[0].rate.remaining;
+                    var RLReset = data[0].rate.reset;
 
                     // Determine how many request will be used in the current request.
-                    if (kindOf(requests) == "array") {
+                    if (kindOf(requests) === 'array') {
                         taskRequests = requests.length;
                     } else {
                         taskRequests = 1;
                     }
 
                     // Clean up reset date
-                    RLReset = grunt.template.date((RLReset * 1000), "h:MM:ss TT");
+                    RLReset = grunt.template.date((RLReset * 1000), 'h:MM:ss TT');
 
                     // Check to see if the API is close or about to run out
                     if (RLRemainingLimit < taskRequests) {
 
-                        console.log("You do not have enough public API request remaining to complete this task. Skipping this task.");
+                        console.log('You do not have enough public API request remaining to complete this task. Skipping this task.');
 
                         next(github_api, true);
 
                     } else {
 
-                        if (RLRemainingLimit == 0) {
+                        if (RLRemainingLimit === 0) {
 
                         } else {
 
                             if (RLRemainingLimit <= rateOptions.warning) {
 
-                                console.log("You are about to hit your public API request limit. To avoid this issue it is suggested that you add an oAuth access token if possible. Public API limit reset at: " + RLRemainingLimit);
+                                console.log('You are about to hit your public API request limit. To avoid this issue it is suggested that you add an oAuth access token if possible. Public API limit reset at: ' + RLRemainingLimit);
 
                                 next(github_api);
-
                             } else {
-
                                 // Nothing to worry about... This time!
                                 next(github_api);
-
                             }
-
                         }
-
                     }
-
                 });
 
             } else {
@@ -101,7 +95,7 @@ module.exports = function(grunt) {
 
                 // Add output path if it exists.
                 if (options.output.path) {
-                    dest = options.output.path + "/" + dest;
+                    dest = options.output.path + '/' + dest;
                 }
 
                 // Create src parameters
@@ -111,17 +105,19 @@ module.exports = function(grunt) {
 
                 github_api.request.add(options.connection, src, dest, options.task);
 
-                if (cb) cb();
+                if (cb) {
+                    cb();
+                }
 
             }
 
-            var data = github_api.data,
-                options = github_api.options;
+            var data = github_api.data;
+            var options = github_api.options;
 
             // Only execute if source exists
             if (data.src) {
 
-                if (kindOf(data.src) === "array") {
+                if (kindOf(data.src) === 'array') {
 
                     (function multiSrc(dataSrc) {
 
@@ -178,11 +174,11 @@ module.exports = function(grunt) {
 
                     function checkCache(data, dest, task, cb) {
 
-                        var destPath = dest.split(".")[0];
+                        var destPath = dest.split('.')[0];
                         var name = task.name;
-                        var uniqueId = "";
+                        var uniqueId = '';
 
-                        if (task.type === "file") {
+                        if (task.type === 'file') {
 
                             uniqueId = data[0].sha;
 
@@ -191,7 +187,7 @@ module.exports = function(grunt) {
                             var jStr = JSON.stringify(data);
 
                             // Deal with the strange changing gravatar url that breaks cache.
-                            jStr = jStr.replace(/https:\/\/\d\.gravatar/g, "https://gravatar");
+                            jStr = jStr.replace(/https:\/\/\d\.gravatar/g, 'https://gravatar');
 
                             uniqueId = github_api.cache.generateId(jStr);
 
@@ -203,7 +199,7 @@ module.exports = function(grunt) {
 
                             if (uniqueId === cache.uniqueId) {
 
-                                grunt.log.writeln( destPath + " is already up-to-date. (No data has been written)");
+                                grunt.log.writeln(destPath + ' is already up-to-date. (No data has been written)');
 
                                 cb(false);
 
@@ -255,9 +251,9 @@ module.exports = function(grunt) {
 
                         (function collectData(data, type, collection, pos, cb) {
 
-                            if (type === "file") {
+                            if (type === 'file') {
 
-                                console.log("Files can not merge at this time with this plugin");
+                                console.log('Files can not merge at this time with this plugin');
 
                                 cb();
 
@@ -291,13 +287,13 @@ module.exports = function(grunt) {
 
                                 } else {
 
-                                    collectData(data, type, collection, pos++, cb)
+                                    collectData(data, type, collection, pos++, cb);
 
                                 }
 
                             }
 
-                        })(data, task.type, {}, 0, function(){
+                        })(data, task.type, {}, 0, function() {
 
                             leaveLoop();
 
@@ -305,8 +301,7 @@ module.exports = function(grunt) {
 
                     }
 
-
-                })(responseArray)
+                })(responseArray);
 
             });
         };
@@ -333,11 +328,10 @@ module.exports = function(grunt) {
 
                     github_api.cache.saved();
 
-                    grunt.log.writeln("Updated Cache!");
+                    grunt.log.writeln('Updated Cache!');
 
                     next(github_api);
                 });
-
 
                 //next(github_api);
 
@@ -345,25 +339,24 @@ module.exports = function(grunt) {
 
                 next(github_api);
             }
-
-        }
+        };
 
         var process = github_api.init(this, grunt)
-            .step(getAPILimits)
-            .step(generateRequest)
-            .step(processRequest)
-            .step(writeResponse)
-            .step(updateCache)
-            .execute(function(err, results) {
+          .step(getAPILimits)
+          .step(generateRequest)
+          .step(processRequest)
+          .step(writeResponse)
+          .step(updateCache)
+          .execute(function(err, results) {
 
-                if (err) {
-                    console.log(err);
-                    done(false);
-                }
+              if (err) {
+                  console.log(err);
+                  done(false);
+              }
 
-                done();
+              done();
 
-            });
+          });
 
     });
 
