@@ -230,7 +230,7 @@ var github_api = function() {
 
                 req.on('error', function(e){
                     console.log(e);
-                })
+                });
 
                 req.end();
 
@@ -254,14 +254,11 @@ var github_api = function() {
                 type = type.type;
             }
 
+            var buffer;
             if (type === "data") {
-
-                var buffer = new Buffer(JSON.stringify(data, null, 4));
-
+                buffer = new Buffer(JSON.stringify(data, null, 4));
             } else {
-
-                var buffer = new Buffer(data[0].content, 'base64').toString('utf8');
-
+                buffer = new Buffer(data[0].content, 'base64').toString('utf8');
             }
 
             fs.writeFile(dest, buffer, function(err) {
@@ -509,23 +506,14 @@ var github_api = function() {
 
     };
 
-    // Return publically accessible items
-    return {
 
-        init: init,
-        step: step,
-        execute: execute,
-        request: request,
-        path: path,
-        write: write,
-        cache: cache
-
-    }
-
-    /*************************************
-     ===   Lib Helper functions   ===
-     ************************************/
-    function mergeObject(obj1, obj2) {
+    /**
+     * Lib Helper functions
+     * @param  {Object} obj1
+     * @param  {Object} obj2
+     * @return {Object}
+     */
+    var mergeObject = function(obj1, obj2) {
 
       for (var p in obj2) {
 
@@ -554,8 +542,22 @@ var github_api = function() {
       }
 
       return obj1;
-    }
+    };
 
-}
+    // Return publically accessible items
+    return {
+
+        init: init,
+        step: step,
+        execute: execute,
+        request: request,
+        path: path,
+        write: write,
+        cache: cache
+
+    };
+
+
+};
 
 module.exports = exports = new github_api();
