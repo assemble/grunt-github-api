@@ -17,7 +17,7 @@ var mkdirp = require('mkdirp');
 
 var github_api = function() {
 
-    var steps = [],
+    var steps = [];
     var requestQueue = [];
     var writeQueue = [];
     var cacheData = {
