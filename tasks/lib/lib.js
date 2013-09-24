@@ -1,3 +1,12 @@
+/*!
+ * grunt-github-api
+ * https://github.com/assemble/grunt-github-api
+ * Authored by Jeffrey Herb <https://github.com/JeffHerb>
+ *
+ * Copyright (c) 2013 Jeffrey Herb, contributors
+ * Licensed under the MIT license.
+ */
+
 'use strict';
 
 // Include libraries
@@ -9,13 +18,13 @@ var mkdirp = require('mkdirp');
 var github_api = function() {
 
     var steps = [],
-        requestQueue = [],
-        writeQueue = [],
-        cacheData = {
-            location: "",
-            contents: {},
-            changed: false,
-        };
+    var requestQueue = [];
+    var writeQueue = [];
+    var cacheData = {
+        location: "",
+        contents: {},
+        changed: false
+    };
 
     var init = function(task, grunt) {
 
@@ -254,7 +263,7 @@ var github_api = function() {
                 var buffer = new Buffer(data[0].content, 'base64').toString('utf8');
 
             }
-            
+
             fs.writeFile(dest, buffer, function(err) {
 
                 console.log(dest + " was written to disk.");
@@ -493,7 +502,7 @@ var github_api = function() {
         generateId: function(str) {
 
             str = crypto.createHmac("sha", str);
-            
+
             return str.digest('hex');
 
         }

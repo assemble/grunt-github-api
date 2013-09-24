@@ -1,3 +1,12 @@
+/*!
+ * grunt-github-api
+ * https://github.com/assemble/grunt-github-api
+ * Authored by Jeffrey Herb <https://github.com/JeffHerb>
+ *
+ * Copyright (c) 2013 Jeffrey Herb, contributors
+ * Licensed under the MIT license.
+ */
+
 'use strict';
 
 module.exports = function(grunt) {
@@ -61,7 +70,7 @@ module.exports = function(grunt) {
                                 // Nothing to worry about... This time!
                                 next(github_api);
 
-                            }                            
+                            }
 
                         }
 
@@ -146,7 +155,7 @@ module.exports = function(grunt) {
 
                 next(github_api);
             }
- 
+
         };
 
         var processRequest = function(github_api, next) {
@@ -212,7 +221,7 @@ module.exports = function(grunt) {
 
                             cb(true);
                         }
-                        
+
                     }
 
                     var res = responseArray.shift(),
@@ -328,7 +337,7 @@ module.exports = function(grunt) {
 
                     next(github_api);
                 });
-                
+
 
                 //next(github_api);
 
