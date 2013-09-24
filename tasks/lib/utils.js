@@ -524,13 +524,10 @@ var github_api = function() {
             if (obj1[p].constructor !== Object) {
                 obj1[p] = {};
             }
-
             obj1[p] = mergeObject(obj1[p], obj2[p]);
 
           } else {
-
             obj1[p] = obj2[p];
-
           }
 
         } catch(e) {
