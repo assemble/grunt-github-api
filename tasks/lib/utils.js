@@ -47,13 +47,13 @@ var github_api = function() {
             },
             task: {
                 name: task.target,
-                type: "data",
                 concat: false,
-                cache: true,
             },
             rateLimit: {
                 warning: 10,
             },
+            type: "data",
+            cache: true,
             filters: false,
             oAuth: false
         };
@@ -153,9 +153,9 @@ var github_api = function() {
 
     var request = {
 
-        add: function (conObject, src, dest, task) {
+        add: function (conObject, src, dest, options) {
 
-            requestQueue.push([conObject, src, dest, task]);
+            requestQueue.push([conObject, src, dest, options]);
 
         },
 
@@ -242,19 +242,16 @@ var github_api = function() {
 
     var write = {
 
-        add: function(data, dest, task) {
+        add: function(data, dest, type) {
 
-            writeQueue.push([data, dest, task]);
+            writeQueue.push([data, dest, type]);
 
         },
 
         write: function(data, dest, type, cb) {
 
-            if (typeof(type) !== "string") {
-                type = type.type;
-            }
-
             var buffer;
+
             if (type === "data") {
                 buffer = new Buffer(JSON.stringify(data, null, 4));
             } else {
@@ -280,8 +277,6 @@ var github_api = function() {
             if (writeQueue.length > 0) {
 
                 (function nextFile(writeQueue, w) {
-
-                    //var w = (write.write);
 
                     var wq = writeQueue.shift();
 

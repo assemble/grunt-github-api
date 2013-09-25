@@ -103,7 +103,7 @@ module.exports = function(grunt) {
                     src += "?" + github_api.path.parameters(options.filters, options.oAuth);
                 }
 
-                github_api.request.add(options.connection, src, dest, options.task);
+                github_api.request.add(options.connection, src, dest, options);
 
                 if (cb) {
                     cb();
@@ -172,13 +172,12 @@ module.exports = function(grunt) {
 
                     }
 
-                    function checkCache(data, dest, task, cb) {
+                    function checkCache(data, dest, name, type, cb) {
 
                         var destPath = dest.split('.')[0];
-                        var name = task.name;
                         var uniqueId = '';
 
-                        if (task.type === 'file') {
+                        if (type === 'file') {
 
                             uniqueId = data[0].sha;
 
@@ -205,7 +204,7 @@ module.exports = function(grunt) {
 
                             } else {
 
-                                github_api.cache.set(name, destPath, task.type, uniqueId);
+                                github_api.cache.set(name, destPath, type, uniqueId);
 
                                 cb(true);
 
@@ -213,7 +212,7 @@ module.exports = function(grunt) {
 
                         } else {
 
-                            github_api.cache.set(name, destPath, task.type, uniqueId);
+                            github_api.cache.set(name, destPath, type, uniqueId);
 
                             cb(true);
                         }
@@ -223,16 +222,16 @@ module.exports = function(grunt) {
                     var res = responseArray.shift(),
                         dest = res[0],
                         data = res[1],
-                        task = res[2];
+                        options = res[2];
 
                     if (data.length === 1) {
 
-                        if (task.cache) {
+                        if (options.cache) {
 
-                            checkCache(data, dest, task, function(results) {
+                            checkCache(data, dest, options.task.name, options.type, function(results) {
 
                                 if (results) {
-                                    github_api.write.add(data, dest, task.type);
+                                    github_api.write.add(data, dest, options.type);
                                 }
 
                                 leaveLoop();
@@ -241,7 +240,7 @@ module.exports = function(grunt) {
 
                         } else {
 
-                            github_api.write.add(data, dest, task.type);
+                            github_api.write.add(data, dest, options.type);
 
                             leaveLoop();
 
@@ -263,13 +262,13 @@ module.exports = function(grunt) {
 
                                 if (data.length === 0) {
 
-                                    if (task.cache) {
+                                    if (options.cache) {
 
-                                        checkCache(data, dest, task, function(results) {
+                                        checkCache(data, dest, options.task.name, options.type, function(results) {
 
                                             if (results) {
 
-                                                github_api.write.add(collection, dest, task.type);
+                                                github_api.write.add(collection, dest, type);
 
                                             }
 
@@ -279,7 +278,7 @@ module.exports = function(grunt) {
 
                                     } else {
 
-                                        github_api.write.add(collection, dest, task.type);
+                                        github_api.write.add(collection, dest, type);
 
                                         cb();
 
@@ -293,7 +292,7 @@ module.exports = function(grunt) {
 
                             }
 
-                        })(data, task.type, {}, 0, function() {
+                        })(data, options.type, {}, 0, function() {
 
                             leaveLoop();
 
@@ -332,8 +331,6 @@ module.exports = function(grunt) {
 
                     next(github_api);
                 });
-
-                //next(github_api);
 
             } else {
 
