@@ -34,6 +34,7 @@ var github_api = function() {
 
         // Set default project options
         var defaultOptions = {
+            name: task.target,
             output: {
                 path: "api-data",
                 cache: ".cache.json",
@@ -46,7 +47,6 @@ var github_api = function() {
                 },
             },
             task: {
-                name: task.target,
                 concat: false,
             },
             rateLimit: {
