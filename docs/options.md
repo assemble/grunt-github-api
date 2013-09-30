@@ -59,13 +59,21 @@ Examples:
 {
   options: {
     task: {
-      type: "data",
       concat: false,
-      cache: true
     }
   }
 }
 ```
+
+## type
+> Task type
+
+Indicates the type of request, may be set to either `data` or `file`
+
+## cache
+> Control which files do or do not get tracked for changes
+
+Specifies whether or not to cache API responses.
 
 
 ## filters
