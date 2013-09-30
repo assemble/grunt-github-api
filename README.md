@@ -73,9 +73,7 @@ Examples:
 ### task
 > Task metadata settings
 
-* **type**: _default: 'data'_ - Indicates the type of request, may be set to either `data` or `file`
 * **concat**: _default: false_ - Set to `true` to concatenate the JSON returned from multiple API queries in the same response. This only works with `data` type requests.
-* **cache**: _default: true_ - specifies whether or not to cache API responses.
 
 Examples:
 
@@ -90,12 +88,12 @@ Examples:
 ```
 
 ### type
-> Task type
+> Type of data the task will be downloading
 
-Indicates the type of request, may be set to either `data` or `file`
+Indicates the type of request, may be set to either `data` or `file`. Default is `data`
 
 ### cache
-> Control which files do or do not get tracked for changes
+> Control which files do or do not get tracked for changes. Default is `true`.
 
 Specifies whether or not to cache API responses.
 
@@ -186,4 +184,4 @@ Released under the MIT license
 
 ***
 
-_This file was generated on Sun Sep 29 2013 20:06:18._
+_This file was generated on Sun Sep 29 2013 20:08:48._
