@@ -83,13 +83,21 @@ Examples:
 {
   options: {
     task: {
-      type: "data",
       concat: false,
-      cache: true
     }
   }
 }
 ```
+
+### type
+> Task type
+
+Indicates the type of request, may be set to either `data` or `file`
+
+### cache
+> Control which files do or do not get tracked for changes
+
+Specifies whether or not to cache API responses.
 
 
 ### filters
@@ -178,4 +186,4 @@ Released under the MIT license
 
 ***
 
-_This file was generated on Sun Sep 29 2013 20:00:02._
+_This file was generated on Sun Sep 29 2013 20:06:18._
