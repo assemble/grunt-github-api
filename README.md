@@ -90,12 +90,12 @@ Examples:
 ### type
 > Type of data the task will be downloading
 
-Indicates the type of request, may be set to either `data` or `file`. Default is `data`
+Indicates the type of request, may be set to either `data` or `file`. Default is `data`.
 
 ### cache
-> Control which files do or do not get tracked for changes. Default is `true`.
+> Control which files do or do not get tracked for changes.
 
-Specifies whether or not to cache API responses.
+Specifies whether or not to cache API responses. Default is `true`.
 
 
 ### filters
@@ -184,4 +184,4 @@ Released under the MIT license
 
 ***
 
-_This file was generated on Sun Sep 29 2013 20:08:48._
+_This file was generated on Sun Sep 29 2013 20:10:04._
