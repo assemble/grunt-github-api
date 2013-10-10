@@ -73,6 +73,8 @@ Indicates the type of request, may be set to either `data` or `file`. Default is
 
 Specifies whether or not to cache API responses. Default is `true`.
 
+## concat
+> Concatinate JSON data together before writting it to a file when property is set to `true`. Default is `false`.
 
 ## filters
 > Query search parameters

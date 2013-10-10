@@ -46,14 +46,12 @@ var github_api = function() {
                     'Content-Type': 'application/json'
                 },
             },
-            task: {
-                concat: false,
-            },
             rateLimit: {
                 warning: 10,
             },
             type: "data",
             cache: true,
+            concat: false,
             filters: false,
             oAuth: false
         };
@@ -183,6 +181,8 @@ var github_api = function() {
                         // Parse the data into an object so it can be manipulated
                         var reqData = JSON.parse(data);
 
+                        //console.log(reqData);
+
                         // Check for an error response from the GitHub API.
                         if (reqData.message) {
 
@@ -204,7 +204,14 @@ var github_api = function() {
                         } else {
 
                             // Check to see if they multiple requests belong together
-                            if (!request[3].concat) {
+                            if (request[3].concat) {
+
+                                //console.log("concat");
+
+                                // Requests are together, call nest request
+                                nextRequest(requestQueue, collection, response);
+
+                            } else {
 
                                 // These are individual request, so add current results to response buffer.
                                 response.push([request[2], collection, request[3]]);
@@ -213,11 +220,6 @@ var github_api = function() {
                                 collection = [];
 
                                 // Call next request
-                                nextRequest(requestQueue, collection, response);
-
-                            } else {
-
-                                // Requests are together, call nest request
                                 nextRequest(requestQueue, collection, response);
 
                             }
@@ -249,6 +251,8 @@ var github_api = function() {
         },
 
         write: function(data, dest, type, cb) {
+
+            //console.log(data.length);
 
             var buffer;
 
