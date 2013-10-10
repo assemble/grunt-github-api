@@ -38,6 +38,10 @@ var github_api = function() {
             output: {
                 path: "api-data",
                 cache: ".cache.json",
+                format: {
+                    indent: 4,
+                    encoding: 'utf8'
+                }
             },
             connection: {
                 host: 'api.github.com',
@@ -53,7 +57,7 @@ var github_api = function() {
             cache: true,
             concat: false,
             filters: false,
-            oAuth: false
+            oAuth: false,
         };
 
         // Set the options
@@ -244,22 +248,22 @@ var github_api = function() {
 
     var write = {
 
-        add: function(data, dest, type) {
+        add: function(data, dest, type, format) {
 
-            writeQueue.push([data, dest, type]);
+            writeQueue.push([data, dest, type, format]);
 
         },
 
-        write: function(data, dest, type, cb) {
+        write: function(data, dest, type, format, cb) {
 
             //console.log(data.length);
 
             var buffer;
 
             if (type === "data") {
-                buffer = new Buffer(JSON.stringify(data, null, 4));
+                buffer = new Buffer(JSON.stringify(data, null, format.indent));
             } else {
-                buffer = new Buffer(data[0].content, 'base64').toString('utf8');
+                buffer = new Buffer(data[0].content, 'base64').toString(format.encoding);
             }
 
             fs.writeFile(dest, buffer, function(err) {
@@ -305,7 +309,7 @@ var github_api = function() {
                                 } else {
 
                                     // Now the directory structure is in place write the file.
-                                    write.write(wq[0], wq[1], wq[2], function(){
+                                    write.write(wq[0], wq[1], wq[2], wq[3], function(){
 
                                         if (writeQueue.length === 0) {
 
@@ -325,7 +329,7 @@ var github_api = function() {
                         } else {
 
                             // The directories exists, write the file
-                            write.write(wq[0], wq[1], wq[2], function(){
+                            write.write(wq[0], wq[1], wq[2], wq[3], function(){
 
                                 if (writeQueue.length === 0) {
 

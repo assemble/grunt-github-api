@@ -222,7 +222,8 @@ module.exports = function(grunt) {
                     var res = responseArray.shift(),
                         dest = res[0],
                         data = res[1],
-                        options = res[2];
+                        options = res[2],
+                        format = options.output.format;
 
                     if (data.length === 1) {
 
@@ -231,7 +232,7 @@ module.exports = function(grunt) {
                             checkCache(data, dest, options.name, options.type, function(results) {
 
                                 if (results) {
-                                    github_api.write.add(data, dest, options.type);
+                                    github_api.write.add(data, dest, options.type, format);
                                 }
 
                                 leaveLoop();
@@ -240,17 +241,13 @@ module.exports = function(grunt) {
 
                         } else {
 
-                            github_api.write.add(data, dest, options.type);
+                            github_api.write.add(data, dest, options.type, format);
 
                             leaveLoop();
 
                         }
 
                     } else {
-
-                        console.log(data);
-
-                        console.log(options);
 
                         (function collectData(data, type, collection, cb) {
 
@@ -277,7 +274,7 @@ module.exports = function(grunt) {
                                                 };
 
 
-                                                github_api.write.add(collection, dest, type);
+                                                github_api.write.add(collection, dest, type, format);
 
                                             }
 
@@ -291,7 +288,7 @@ module.exports = function(grunt) {
                                             data: collection
                                         };
 
-                                        github_api.write.add(collection, dest, type);
+                                        github_api.write.add(collection, dest, type, format);
 
                                         cb();
 
@@ -352,11 +349,11 @@ module.exports = function(grunt) {
         };
 
         var process = github_api.init(this, grunt)
-          //.step(getAPILimits)
+          .step(getAPILimits)
           .step(generateRequest)
           .step(processRequest)
           .step(writeResponse)
-          //.step(updateCache)
+          .step(updateCache)
           .execute(function(err, results) {
 
               if (err) {

@@ -7,6 +7,10 @@ Options for this plugin are broken down into sub-option categories as defined be
 * **path**: _default: 'api-data'_ - location where all data is collected when saved to disk, if no specific destination is definded under the targets dest.
 * **cache**:  _default: '.cache.json'_ - plugin cache file name. Will be stored under under the output path defined above.
 
+### format
+* **indent**:  _default: 4_ - number of spaces each indent should take up.
+* **encoding**:  _default: 'utf8'_ - file format all data written to disk should be in.
+
 Examples:
 
 ```js
@@ -15,6 +19,10 @@ Examples:
     output: {
       path: 'my/api/data/',
       cache: 'my/api/cache/'
+      format: {
+        indent: 4,
+        encoding: 'utf8'
+      }
     }
   }
 }

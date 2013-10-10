@@ -36,12 +36,16 @@ module.exports = function(grunt) {
           filters: {
             state: 'open'
           },
+          output: {
+            format: {
+              indent: 2
+            }
+          },
           concat: true
         },
         src: ['/repos/assemble/grunt-github-api-example/issues', '/repos/assemble/grunt-github-api/issues'],
         dest: 'combinded-issues.json'
-      }
-      /*
+      },
       seperateIssues: {
         src: ['/repos/assemble/grunt-github-api-example/issues', '/repos/assemble/grunt-github-api/issues'],
       },
@@ -52,7 +56,7 @@ module.exports = function(grunt) {
           }
         },
         src: '/repos/assemble/grunt-github-api-example/contents/example.json',
-      }*/
+      }
     }
 
   });
