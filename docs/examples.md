@@ -21,8 +21,8 @@ github: {
       }
     },
     src: [
-      '/repos/jeffherb/grunt-github-api-example/issues',
-      '/repos/jeffherb/grunt-github-api/issues'
+      '/repos/assemble/grunt-github-api-example/issues',
+      '/repos/assemble/grunt-github-api/issues'
     ],
     dest: 'combinded-issues.json'
   },
@@ -36,8 +36,8 @@ github: {
       }
     },
     src: [
-      '/repos/jeffherb/grunt-github-api-example/issues',
-      '/repos/jeffherb/grunt-github-api/issues'
+      '/repos/assemble/grunt-github-api-example/issues',
+      '/repos/assemble/grunt-github-api/issues'
     ]
   },
 
@@ -48,7 +48,7 @@ github: {
         type: 'file',
       }
     },
-    src: '/repos/jeffherb/grunt-github-api-example/contents/example.json'
+    src: '/repos/assemble/grunt-github-api-example/contents/example.json'
   }
 }
 ```
