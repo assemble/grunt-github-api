@@ -53,24 +53,6 @@ Examples:
 }
 ```
 
-
-## task
-> Task metadata settings
-
-* **concat**: _default: false_ - Set to `true` to concatenate the JSON returned from multiple API queries in the same response. This only works with `data` type requests.
-
-Examples:
-
-```js
-{
-  options: {
-    task: {
-      concat: false,
-    }
-  }
-}
-```
-
 ## type
 > Type of data the task will be downloading
 
