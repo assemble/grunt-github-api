@@ -91,11 +91,11 @@ module.exports = function(grunt) {
                     dest = github_api.path.cleaner(dest, false, false);
                 } else {
                     dest = github_api.path.cleaner(src, false, false);
-                }
 
-                // Add output path if it exists.
-                if (options.output.path) {
-                    dest = options.output.path + '/' + dest;
+                    // Add output path if it exists.
+                    if (options.output.path) {
+                        dest = options.output.path + '/' + dest;
+                    }
                 }
 
                 // Create src parameters
@@ -333,7 +333,7 @@ module.exports = function(grunt) {
 
                 var cacheData = github_api.cache.dump();
 
-                github_api.write.write(cacheData.contents, cacheData.location, 'data', function() {
+                github_api.write.write(cacheData.contents, cacheData.location, 'data', github_api.options.output.format, function() {
 
                     github_api.cache.saved();
 

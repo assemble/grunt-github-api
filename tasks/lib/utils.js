@@ -260,6 +260,8 @@ var github_api = function() {
 
             var buffer;
 
+            console.log(format);
+
             if (type === "data") {
                 buffer = new Buffer(JSON.stringify(data, null, format.indent));
             } else {

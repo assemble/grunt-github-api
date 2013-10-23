@@ -25,6 +25,7 @@ github: {
       '/repos/assemble/grunt-github-api/issues'
     ],
     dest: 'combinded-issues.json'
+    // File created will be save along the gruntfile.
   },
 
   // Create two different files from two different repos.
@@ -39,6 +40,7 @@ github: {
       '/repos/assemble/grunt-github-api-example/issues',
       '/repos/assemble/grunt-github-api/issues'
     ]
+    // Files created will be saved inside the api-data folder
   },
 
   // Downloads a copy of the example.json file from GitHub.
@@ -49,6 +51,7 @@ github: {
       }
     },
     src: '/repos/assemble/grunt-github-api-example/contents/example.json'
+    // Files created will be saved inside the api-data folder
   }
 }
 ```
