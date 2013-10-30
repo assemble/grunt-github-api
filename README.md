@@ -28,7 +28,7 @@ Options for this plugin are broken down into sub-option categories as defined be
 ### output
 > Used to idenify where cache and downloaded request data should be stored by default
 
-* **path**: _default: 'api-data'_ - location where all data is collected when saved to disk, if no specific destination is definded under the targets dest.
+* **path**: _default: 'api-data'_ - special location where all data is collected when saved to disk, when no specific destination is definded under the targets `dest`.
 * **cache**:  _default: '.cache.json'_ - plugin cache file name. Will be stored under under the output path defined above.
 
 #### format
@@ -132,6 +132,7 @@ github: {
       '/repos/assemble/grunt-github-api/issues'
     ],
     dest: 'combinded-issues.json'
+    // File created will be save along the gruntfile.
   },
 
   // Create two different files from two different repos.
@@ -146,6 +147,7 @@ github: {
       '/repos/assemble/grunt-github-api-example/issues',
       '/repos/assemble/grunt-github-api/issues'
     ]
+    // Files created will be saved inside the api-data folder
   },
 
   // Downloads a copy of the example.json file from GitHub.
@@ -156,6 +158,7 @@ github: {
       }
     },
     src: '/repos/assemble/grunt-github-api-example/contents/example.json'
+    // File created will be saved inside the api-data folder
   }
 }
 ```
@@ -177,4 +180,4 @@ Released under the MIT license
 
 ***
 
-_This file was generated on Tue Oct 22 2013 21:23:00._
+_This file was generated on Tue Oct 29 2013 21:13:51._

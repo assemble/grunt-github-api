@@ -51,7 +51,7 @@ github: {
       }
     },
     src: '/repos/assemble/grunt-github-api-example/contents/example.json'
-    // Files created will be saved inside the api-data folder
+    // File created will be saved inside the api-data folder
   }
 }
 ```

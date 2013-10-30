@@ -4,7 +4,7 @@ Options for this plugin are broken down into sub-option categories as defined be
 ## output
 > Used to idenify where cache and downloaded request data should be stored by default
 
-* **path**: _default: 'api-data'_ - special location where all data is collected when saved to disk, when no specific destination is definded under the targets dest.
+* **path**: _default: 'api-data'_ - special location where all data is collected when saved to disk, when no specific destination is definded under the targets `dest`.
 * **cache**:  _default: '.cache.json'_ - plugin cache file name. Will be stored under under the output path defined above.
 
 ### format

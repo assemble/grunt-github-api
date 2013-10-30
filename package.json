@@ -1,7 +1,7 @@
 {
   "name": "grunt-github-api",
   "description": "Query Github's API and save the returned JSON files locally.",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "homepage": "https://github.com/assemble/grunt-github-api",
   "author": {
     "name": "Jeffrey Herb",

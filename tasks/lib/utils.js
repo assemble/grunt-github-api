@@ -185,8 +185,6 @@ var github_api = function() {
                         // Parse the data into an object so it can be manipulated
                         var reqData = JSON.parse(data);
 
-                        //console.log(reqData);
-
                         // Check for an error response from the GitHub API.
                         if (reqData.message) {
 
@@ -209,8 +207,6 @@ var github_api = function() {
 
                             // Check to see if they multiple requests belong together
                             if (request[3].concat) {
-
-                                //console.log("concat");
 
                                 // Requests are together, call nest request
                                 nextRequest(requestQueue, collection, response);
@@ -256,11 +252,7 @@ var github_api = function() {
 
         write: function(data, dest, type, format, cb) {
 
-            //console.log(data.length);
-
             var buffer;
-
-            console.log(format);
 
             if (type === "data") {
                 buffer = new Buffer(JSON.stringify(data, null, format.indent));
